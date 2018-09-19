@@ -2,3 +2,4 @@
 just quick file to test remote comits from various desktop apps.
 
 * Source Tree
+* Visual Studio Code
