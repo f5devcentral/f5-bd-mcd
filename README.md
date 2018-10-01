@@ -17,10 +17,10 @@ To read about the concept and overview of what is contained in this repository p
     * Recommended Process
     * Speed Run
     * Target Environments
-    * On Premises (RedHat Virtualization)
-    * Azure Cloud
-    * AWS Cloud
-    * Google Cloud
+      * On Premises (RedHat Virtualization)
+      * Azure Cloud
+      * AWS Cloud
+      * Google Cloud
 * BIG-IP
     * Setup
     * Licensing
