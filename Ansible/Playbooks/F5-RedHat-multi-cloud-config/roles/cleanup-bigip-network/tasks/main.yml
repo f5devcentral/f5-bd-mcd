@@ -1,0 +1,67 @@
+---
+
+# tasks file for bigip-cleanup
+
+- name: Delete overlay network setting on bigip (self-ip)
+  bigip_command:
+    commands: delete net self {{ vxlan_selfip }}
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+  register: result
+  failed_when:
+    - "'not found' in result.stdout"
+    - "result.stdout != ''"
+
+- name: Delete FDB entries in vxlan tunnel on bigip
+  bigip_command:
+    commands: delete net fdb tunnel {{ vxlan_tunname }} all-records
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+  register: result
+  failed_when:
+    - "'not found' in result.stdout"
+    - "result.stdout != ''"
+
+- name: Delete vxlan tunnel on bigip
+  bigip_command:
+    commands: delete net tunnels tunnel {{ vxlan_tunname }}
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no" 
+  delegate_to: localhost
+  register: result
+  failed_when: 
+    - "'not found' in result.stdout"
+    - "result.stdout != ''"
+
+- name: Delete vxlan profile on bigip
+  bigip_command:
+    commands: delete net tunnels vxlan {{ vxlan_prof }}
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+  register: result
+  failed_when: 
+    - "'not found' in result.stdout"
+    - "result.stdout != ''"
+
+- name: "Delete BIG-IP partitions used for this demo"
+  bigip_partition:
+    name: "{{ item }}"
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+    state: absent
+  delegate_to: localhost
+  with_items: "{{ applications }}"
+

@@ -1,0 +1,82 @@
+---
+# tasks file for bigip-setup
+
+- name: "Running bigip-setup role... for DC {{ dcname }}"
+  debug:
+    msg: "Running bigip-setup role... for DC {{ dcname }}"
+
+- name: "Azure/AWS specific - add UDP port 4789 in the default self-allow"
+  bigip_command:
+    commands: "modify net self-allow defaults add { udp:4789 }"
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+  when: "('azr' in dcname) or ('aws' in dcname)" 
+
+- name: Create vxlan profile on bigip
+  bigip_command:
+    commands: create net tunnels vxlan {{ vxlan_prof }} flooding-type multipoint port 4789
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+
+- name: List vxlan profile on bigip
+  bigip_command:
+    commands: list net tunnels vxlan {{ vxlan_prof }}
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+
+- name: Create vxlan tunnel on bigip
+  bigip_command:
+    commands: create net tunnels tunnel {{ vxlan_tunname }} key 0 profile {{ vxlan_prof }} local-address {{ hostip }} mtu 1600
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+
+- name: List vxlan tunnel on bigip
+  bigip_command:
+    commands: list net tunnels tunnel {{ vxlan_tunname }}
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+
+- name: Create FDB entries for vxlan tunnel on bigip
+  bigip_command:
+    commands: modify net fdb tunnel {{ vxlan_tunname }} records replace-all-with { {{ vxlan_endpoints }} }
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+  
+- name: Create new self-ip with an IP from host subnet range on bigip
+  bigip_command:
+    commands: create net self {{ vxlan_selfip }} address {{ new_subip }}/14 allow-service all vlan {{ vxlan_tunname }}
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+
+- name: "Create partitions"
+  bigip_partition:
+    name: "{{ item }}"
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "False"
+  delegate_to: localhost
+  with_items: "{{ applications }}"
+
+

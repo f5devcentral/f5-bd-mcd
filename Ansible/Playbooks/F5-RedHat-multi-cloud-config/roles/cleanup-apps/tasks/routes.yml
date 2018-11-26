@@ -1,0 +1,16 @@
+---
+
+- name: Delete the routes from the routing-vip in the BIG-IP (inner loop)
+  shell: oc delete -f "{{ role_path }}/../../files/{{ dcname }}/{{ inner_item }}" -n {{ application }}
+  args:
+    warn: no
+  delegate_to: localhost
+  register: result
+  failed_when:
+    - result is not success
+    - "'NotFound' not in result.stderr"
+  with_items: "{{ routes }}"
+  loop_control:
+    loop_var: inner_item
+
+

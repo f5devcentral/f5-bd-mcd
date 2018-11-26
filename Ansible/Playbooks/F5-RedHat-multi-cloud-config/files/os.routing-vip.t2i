@@ -1,0 +1,54 @@
+@option(iapp-type): nofolder-disable-strict-updates
+
+@label(__vs_addr__): VIP address
+@label(__vs_port__): VIP port
+@label(__prefix__): Prefix name used for all objects created
+
+ltm profile one-connect __prefix__-custom-oneconnect {
+    defaults-from oneconnect
+    idle-timeout-override 30
+    limit-type idle
+    source-mask 255.255.255.255
+}
+
+ltm policy __prefix__-routing-policy {
+    controls { forwarding }
+    requires { http }
+    rules {
+        default_rule {
+            ordinal 1
+        }
+    }
+    strategy first-match
+}
+
+ltm virtual __prefix__-routing-vip {
+    destination __vs_addr__:__vs_port__
+    ip-protocol tcp
+    mask 255.255.255.255
+    policies {
+        __prefix__-routing-policy { }
+    }
+    profiles {
+        __prefix__-custom-oneconnect { }
+        http { }
+        tcp-lan-optimized {
+            context serverside
+        }
+        tcp-wan-optimized {
+            context clientside
+        }
+    }
+    rules {
+        /Common/multisite-plugin/multisite-status
+    }
+    source 0.0.0.0/0
+    source-address-translation {
+        type automap
+    }
+    translate-address enabled
+    translate-port enabled
+    vlans none
+    vlans-disabled
+}
+

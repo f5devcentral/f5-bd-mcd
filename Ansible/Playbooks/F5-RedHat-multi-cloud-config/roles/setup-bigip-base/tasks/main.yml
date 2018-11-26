@@ -1,0 +1,35 @@
+---
+
+- name: Add to the BIG-IP library the iApp file bigip-base-config.tmpl
+  delegate_to: localhost
+  bigip_iapp_template:
+    content: "{{ lookup('template', '../../files/bigip-base-config.{{ dcname }}.tmpl') }}"
+    force: true
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+    state: "present"
+
+- name: Deploy the iApp bigip-base-config
+  delegate_to: localhost
+  bigip_iapp_service:
+    name: bigip-base-config
+    template: bigip-base-config.{{ dcname }}
+    force: true
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+    state: "present"
+    parameters:
+      variables:
+         - name: "local__bigip_names"
+           value: "atom"
+         - name: "local__public_prefix"
+           value: "{{ bigip_public_prefix }}"
+         - name: "local__external_prefix"
+           value: "{{ bigip_external_prefix }}"
+         - name: "local__internal_prefix"
+           value: "{{ bigip_internal_prefix }}"
+

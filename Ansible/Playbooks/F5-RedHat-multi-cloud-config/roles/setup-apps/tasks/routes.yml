@@ -1,0 +1,15 @@
+---
+
+- name: Add the routes to the routing-vip in the BIG-IP (inner loop)
+  shell: oc apply -f "{{ role_path }}/../../files/{{ dcname }}/{{ inner_item }}" -n {{ application }}
+  args:
+    warn: no
+  delegate_to: localhost
+  register: result
+  failed_when:
+    - result is not success
+    - "'exists' not in result.stderr"
+  with_items: "{{ routes }}"
+  loop_control:
+    loop_var: inner_item
+

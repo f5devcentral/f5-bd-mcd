@@ -1,0 +1,79 @@
+---
+
+# We loop this using a list with the config maps of each application
+
+- name: Copy the template files for the route config maps
+  delegate_to: localhost
+  shell: cp -f {{ role_path }}/../../files/{{ inner_item }} {{ role_path }}/../../files/{{ dcname }}/{{ inner_item }}
+  args:
+    warn: no
+  with_items: "{{ routes }}"
+  loop_control:
+    loop_var: inner_item
+
+- name: Update the pattern %%application%% in the route config map for DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/{{ dcname }}/{{ inner_item }}"
+    regexp: '%%application%%'
+    replace: '{{ application }}'
+  with_items: "{{ routes }}"
+  loop_control:
+    loop_var: inner_item
+
+- name: Update the pattern %%dcname%% in the route config maps for DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/{{ dcname }}/{{ inner_item }}"
+    regexp: '%%dcname%%'
+    replace: '{{ dcname }}'
+  with_items: "{{ routes }}"
+  loop_control:
+    loop_var: inner_item
+
+#- name: debug
+#  debug:
+#    msg: "IP address is {{ routingvip[application] }}"
+#  delegate_to: localhost
+
+- name: Update the pattern %%routingvip_translation%% in the route config maps for DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/{{ dcname }}/{{ inner_item }}"
+    regexp: '%%routingvip_translation%%'
+    replace: '{{ routingvip_translation[application] }}'
+  with_items: "{{ routes }}"
+  loop_control:
+    loop_var: inner_item
+
+- name: Update the pattern %%f5_server_port%% in the route config maps for DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/{{ dcname }}/{{ inner_item }}"
+    regexp: '%%f5_server_port%%'
+    replace: '{{ f5_server_port }}'
+  with_items: "{{ routes }}"
+  loop_control:
+    loop_var: inner_item
+
+
+- name: Update the pattern %%bigip_user%% in the route config maps for DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/{{ dcname }}/{{ inner_item }}"
+    regexp: '%%bigip_user%%'
+    replace: '{{ bigip_user }}'
+  with_items: "{{ routes }}"
+  loop_control:
+    loop_var: inner_item
+
+- name: Update the pattern %%bigip_adminpass%% in the route config maps for DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/{{ dcname }}/{{ inner_item }}"
+    regexp: '%%bigip_adminpass%%'
+    replace: '{{ bigip_adminpass }}'
+  with_items: "{{ routes }}"
+  loop_control:
+    loop_var: inner_item
+

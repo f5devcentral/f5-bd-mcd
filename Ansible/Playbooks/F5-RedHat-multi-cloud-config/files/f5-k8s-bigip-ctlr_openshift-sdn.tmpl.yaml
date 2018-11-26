@@ -1,0 +1,44 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: k8s-bigip-ctlr-%%app_namespace%%
+  namespace: %%ccdeployment_namespace%%
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: k8s-bigip-ctlr-%%app_namespace%%
+      labels:
+        app: k8s-bigip-ctlr-%%app_namespace%%
+    spec:
+      serviceAccountName: bigip-ctlr
+      containers:
+        - name: k8s-bigip-ctlr-%%app_namespace%%
+          image: "f5networks/k8s-bigip-ctlr:1.4.2"
+          env:
+            - name: BIGIP_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: bigip-login
+                  key: username
+            - name: BIGIP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bigip-login
+                  key: password
+          command: ["/app/bin/k8s-bigip-ctlr"]
+          args: [
+            "--bigip-username=$(BIGIP_USERNAME)",
+            "--bigip-password=$(BIGIP_PASSWORD)",
+          #--- Change to your BIG-IP settings ------#
+            "--bigip-url=https://%%bigip_server%%:%%f5_server_port%%",
+            "--bigip-partition=%%bigip_partition_name%%",
+            "--namespace=%%app_namespace%%",
+            "--pool-member-type=cluster",
+            # Path to the BIG-IP VXLAN connected to the OpenShift HostSubnet
+            "--openshift-sdn-name=/Common/%%vxlan_tunname%%",
+            # Uncomment the below line fro debug logs
+            #"--log-level=DEBUG"
+            ]
+      imagePullSecrets:
+        - name: f5-docker-images

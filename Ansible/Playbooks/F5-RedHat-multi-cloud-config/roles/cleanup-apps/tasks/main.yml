@@ -1,0 +1,176 @@
+---
+
+- name: Delete the routes from the routing-vip in the BIG-IP (outer loop)
+  include_tasks: routes.yml
+    application={{ item.key }}
+    routes={{ item.value }}
+  with_dict: "{{ route_tmpl_files }}"
+
+- name: Delete the routing-vip in the BIG-IP
+  delegate_to: localhost
+  shell: oc delete -f {{ role_path }}/../../files/{{ dcname}}/{{ item }}.routing-vip.tmpl.yaml -n {{ item }}
+  args:
+    warn: no
+  register: result
+  failed_when:
+    - result is not success
+    - "'not found' not in result.stderr"
+  with_items: "{{ applications }}"
+
+- name: Delete default-backend for the routing-vip
+  shell: oc delete -f {{ role_path }}/../../files/default-backend.yaml -n {{ item }}
+  args:
+    warn: no
+  delegate_to: localhost
+  register: result
+  failed_when:
+    - result is not success
+    - "'not found' not in result.stderr"
+  with_items: "{{ applications }}"
+
+# Rather than waiting for the iApps to be deleted we wait until the nodes are deleted
+# because they are indirectly created by the iApps (the node of routestatus dummy pool member)
+# and deleted after the iApps are deleted by the cleanup process
+#
+# Unfortunately stdout is not always the command output, see: https://github.com/F5Networks/f5-ansible/issues/624
+#
+# Update: the above issue has been disregarded but it's not clear where our problems are here
+# 
+#- name: "Wait until CC has completed deleting all the configuration"
+#  bigip_command:
+#    commands: list ltm node /{{bigip_partition_name}}/1.1.1.1
+#    password: "{{ bigip_adminpass }}"
+#    server: "{{ bigip_server }}"
+#    user: "{{ bigip_user }}"
+#    validate_certs: "no"
+#    interval:  5
+#    retries: 0
+#    wait_for: stdout == ""
+#  ignore_errors: true
+#  delegate_to: localhost
+#  register: stdout
+#
+#- name: Fail
+#  fail:
+#    msg: "{{ stdout }}"
+
+- name: "Wait until CC has completed deleting all the configurations"
+  shell: ( tmsh -c "cd /{{ item }} ; list ltm node all" ) || exit 0
+  args:
+    warn: no
+  register: result
+  until: result.stdout == "" or "not found" in result.stderr 
+  retries: 30
+  delay: 2 
+  with_items: "{{ applications }}"
+
+- name: Delete BIG-IP Container Connector Deployment configuration
+  delegate_to: localhost
+  shell: oc delete -f "{{ role_path }}/../../files/{{ dcname }}/{{ item }}.{{ ccdeployment_configfile }}" -n {{ ccdeployment_namespaces[item] }}
+  args:
+    warn: no
+  register: result
+  failed_when:
+    - result is not success
+    - "'deleted' not in result.msg"
+    - "'not found' not in result.stderr"
+  with_items: "{{ applications }}"
+
+### Actions in BIG-IP after the CC is deleted
+
+- name: Delete the CC installed iRule http_Redirect_irule
+  bigip_command:
+    commands: delete ltm rule /{{ item }}/http_redirect_irule
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+  with_items: "{{ applications }}"
+
+# No longer needed because it is imported with the ILX workspace
+#- name: Delete the MCD iRule
+#  bigip_command:
+#    commands: delete ltm rule /Common/multisite-status
+#    password: "{{ bigip_adminpass }}"
+#    server: "{{ bigip_server }}"
+#    user: "{{ bigip_user }}"
+#    validate_certs: "no"
+#  delegate_to: localhost
+
+- name: Delete the ILX plugin
+  bigip_command:
+    commands: delete ilx plugin multisite-plugin
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+
+- name: Delete the ILX workspace
+  bigip_command:
+    commands: delete ilx workspace multisite
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+
+- name: Delete the MCD monitor
+  bigip_command:
+    commands: delete sys file external-monitor /Common/os.mdc.monitor
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+
+- name: Delete the MCD os.routing-vip.tmpl iApp
+  bigip_command:
+    commands: delete sys application template os.routing-vip
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+
+- name: Delete the MCD os.route.tmpl iApp
+  bigip_command: 
+    commands: delete sys application template os.route
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}" 
+    validate_certs: "no" 
+  delegate_to: localhost
+
+
+- name: Undeploy the iApp os.virtual-address
+  delegate_to: localhost
+  bigip_iapp_service:
+    name: virtual-address-{{ item }}
+    template: os.virtual-address
+    force: true
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+    traffic_group: "traffic-group-local-only"
+    state: "absent"
+  with_items: "{{ routingvip_translation.values() | unique }}"
+
+- name: Delete from the BIG-IP library the iApp file os.virtual-address.tmpl
+  delegate_to: localhost
+  bigip_iapp_template:
+    content: "{{ lookup('template', '../../files/os.virtual-address.tmpl') }}"
+    force: true
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+    state: "absent"
+
+# include bigip-cleanup role when cc-cleanup succeeds
+#- name: BIG-IP Configurations cleanup
+#  include_role:
+#    name: bigip-cleanup
+

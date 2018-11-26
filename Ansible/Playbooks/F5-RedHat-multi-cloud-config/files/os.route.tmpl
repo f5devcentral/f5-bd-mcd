@@ -1,0 +1,295 @@
+sys application template os.route {
+    actions {
+        definition {
+            html-help {
+            }
+            implementation {
+
+		### u.alonsocamaro@f5.com 01/2018
+                ###
+                ###  This iApp attaches a L7 route to an existing LTM policy by means of adding a rule
+                ### 
+
+                puts "\nStarting iApp $tmsh::app_name.app"
+		iapp::template start
+
+                ### Parameters check and iApp-wide variables. iApp's APL required and default keywords only apply when using the GUI
+
+                if {${var__policy_path} == ""} {
+                    error "Policy path parameter parameter is empty. Aborting..."
+                }
+
+                if {${var__dc_host} == ""} {
+                    error "DC Host parameter parameter is empty. Aborting..."
+                }
+
+                if {${var__gslb_host} == ""} {
+                    error "GSLB Host parameter parameter is empty. Aborting..."
+                }
+
+                if {${var__uri} == ""} {
+                    error "Uri parameter parameter is empty. Aborting..."
+                }
+
+                if {![iapp::is monitor__http_or_https http https]} {
+                    error "Monitor type must be either http or https. Aborting..."
+                }
+
+                if {${monitor__interval} == ""} {
+                    error "Monitor interval parameter is empty. Aborting..."
+                }
+
+                if {${monitor__timeout} == ""} {
+                    error "Monitor timeout parameter is empty. Aborting..."
+                }
+
+                if {${monitor__request} == ""} {
+                    error "Monitor request parameter is empty. Aborting..."
+                }
+
+                if {${routestatus__routingvip} == ""} {
+                    error "Route Status routing VIP parameter is empty. Aborting..."
+                }
+
+                if {${routestatus__interval} == ""} {
+                    error "Route Status monitor interval parameter is empty. Aborting..."
+                }
+
+                if {${routestatus__timeout} == ""} {
+                    error "Route Status monitor timeout parameter is empty. Aborting..."
+                }
+
+                if {${routestatus__bigipaddr} == ""} {
+                    error "Route Status BIG-IP address parameter is empty. Aborting..."
+                }
+
+                if {${routestatus__bigipport} == ""} {
+                    error "Route Status BIG-IP port parameter is empty. Aborting..."
+                }
+
+                if {${routestatus__bigipdebug} == ""} {
+                    error "Route Status monitor debug parameter is empty. Aborting..."
+                }
+
+                if {${routestatus__bigipuser} == ""} {
+                    error "Route Status monitor user parameter is empty. Aborting..."
+                }
+
+                if {${routestatus__bigippasswd} == ""} {
+                    error "Route Status monitor password parameter is empty. Aborting..."
+                }   
+
+                if {${pool__slow_ramp_setvalue} == ""} {
+                    error "Pool's slow ramp parameter is empty. Aborting..."
+                }
+
+                if {${pool__min_active_members} == ""} {
+                    error "Pool's min active members parameter is empty. Aborting..."
+                }
+
+                if {${pool__lb_method} == ""} {
+                    set pool__lb_method "round-robin"
+                    puts "Assigning default load balancing method $pool__lb_method"
+                }
+
+                if {${pool__tcp_queue_enabled_or_disabled} == ""} {
+                    set pool__tcp_queue_enabled_or_disabled "disabled"
+                    puts "Enabling TCP queuing by default"
+                }
+
+                if {${pool__tcp_queue_length} == ""} {
+                    set pool__tcp_queue_length 1
+                    puts "Setting TCP queue length to $pool__tcp_queue_length"
+                }
+
+                if {${pool__tcp_queue_timeout} == ""} {
+                    set pool__tcp_queue_timeout 500
+                    puts "Setting TCP queue timeout to $pool__tcp_queue_timeout"
+                }
+
+		set rulename ${var__dc_host}${var__uri}
+		set rulename [string map { / _ : _ } $rulename]
+
+                ### The policy we are in will be modified by another iApp so we need to disable strict-updates
+     
+                tmsh::modify sys application service $tmsh::app_name strict-updates disabled
+
+		### Workaround for the external monitor which requires the pool for the status VIP not to be in a folder within a partition
+
+		tmsh::cd ".."
+
+		### Create monitor
+
+		iapp::conf create ltm monitor $monitor__http_or_https \
+		    ${rulename}_${monitor__http_or_https}_monitor \
+		    defaults-from $monitor__http_or_https \
+		    interval $monitor__interval \
+		    timeout $monitor__timeout \
+		    send '$::monitor__request' \
+		    recv '$::monitor__response'		
+
+		### Create pool
+
+		iapp::conf create ltm pool ${rulename}_pool \
+		    slow-ramp-time $::pool__slow_ramp_setvalue \
+		    min-active-members $::pool__min_active_members \
+		    monitor ${rulename}_${monitor__http_or_https}_monitor \
+		    load-balancing-mode $::pool__lb_method \
+		    queue-on-connection-limit $::pool__tcp_queue_enabled_or_disabled \
+		    queue-depth-limit $::pool__tcp_queue_length \
+		    queue-time-limit  $::pool__tcp_queue_timeout \
+		    [iapp::pool_members $::pool__members]
+
+		### LTM Policy
+
+		puts "About to add rule $rulename to policy $var__policy_path"
+
+		# We allow a maximum URI path of 1023 characters
+		set ordinal [expr {1024-[string length ${var__uri}]}]
+
+		# For some reason I cannot specify the ordinal in the create statement since I introduced the controls and require statements. The error message is:
+		# script did not successfully complete: ("ordinal" identifier must be a positive decimal number
+		set cmd "tmsh::modify ltm policy ${var__policy_path} legacy controls replace-all-with { { forwarding } } requires replace-all-with { { http } } rules add { { ${rulename} { actions replace-all-with { 0 { forward select pool ${rulename}_pool } } conditions replace-all-with { 0 { http-host host values { ${var__dc_host} ${var__gslb_host} } } 1 { http-uri path starts-with values { ${var__uri} } } } } } }"
+
+		puts "\nAdding the policy with the command:\n\n"
+                puts "$cmd\n"
+		eval $cmd
+
+		set cmd "tmsh::modify ltm policy ${var__policy_path} legacy rules modify { { ${rulename} { ordinal ${ordinal} } } }"
+		puts "\nAssigning to the the rule its ordinal number with the command:\n\n"
+                puts "$cmd\n"
+                eval $cmd
+
+                ### Creation of the status VIP alongside the required dummy pool and monitor
+
+		set partition "[lindex [split [tmsh::pwd] /] 1]"
+                iapp::conf create ltm monitor external \
+                    ${rulename}_routestatus \
+                    defaults-from external \
+                    interval $routestatus__interval \
+                    timeout $routestatus__timeout \
+                    run /Common/os.mdc.monitor \
+                    user-defined BIGIPADDR $routestatus__bigipaddr \
+                    user-defined BIGIPPORT $routestatus__bigipport \
+                    user-defined BIGIPDEBUG $routestatus__bigipdebug \
+                    user-defined BIGIPPARTITION $partition \
+                    user-defined BIGIPUSER $routestatus__bigipuser \
+                    user-defined BIGIPPASSWD $routestatus__bigippasswd \
+                    user-defined BIGIPPOOL ${rulename}_pool
+
+                iapp::conf create ltm pool ${rulename}_routestatus \
+                    monitor ${rulename}_routestatus \
+                    members replace-all-with \{ 1.1.1.1:65535 \}
+                
+		iapp::conf create ltm virtual ${rulename}_routestatus \
+			destination ${routestatus__routingvip}:any \
+			ip-protocol tcp \
+			mask 255.255.255.255 \
+			profiles replace-all-with \{ /Common/tcp \} \
+			source 0.0.0.0/0 \
+			translate-address disabled \
+			translate-port disabled \
+                        pool ${rulename}_routestatus \
+			vlans-enabled
+		
+		###
+
+		iapp::template stop
+                puts "Finished iApp $tmsh::app_name.app"
+            }
+            macro {
+            }
+            presentation {
+                include "/Common/f5.apl_common"
+                section var {
+		    string policy_path display "xxlarge" required
+		    string dc_host display "xxlarge" required
+                    string gslb_host display "xxlarge" required
+		    string uri display "xxlarge" required
+                }
+
+		section monitor {
+		    string http_or_https display "xxlarge" required
+		    string interval display "xlarge" required
+		    string timeout display "xlarge" required
+		    string request display "xxxlarge" required
+		    string response display "xxxlarge" 
+		}
+
+                section routestatus {
+                    string routingvip display "xlarge" required
+                    string interval display "xlarge" required default "5"
+                    string timeout display "xlarge" required default "16"
+                    string bigipaddr display "xxlarge" default "localhost" required 
+                    string bigipport display "xxlarge" default "port" required
+                    string bigipuser display "xxlarge" default "admin" required
+                    string bigippasswd display "xxlarge" required
+                    string bigipdebug display "xlarge" default "Off"
+                }
+
+		section pool {
+
+		    string slow_ramp_setvalue display "medium" default "30" required validator "NonNegativeNumber"
+		    string min_active_members display "medium" default "0" required validator "NonNegativeNumber"
+		    string lb_method display "medium" default "round-robin" 
+		    string tcp_queue_enabled_or_disabled display "medium" default "disabled"
+		    string tcp_queue_length display "medium" default "1" required validator "NonNegativeNumber"
+		    string tcp_queue_timeout display "medium" default "500" required validator "NonNegativeNumber"
+		    table members {
+		    	editchoice addr display "large" tcl {
+		    	    package require iapp 1.3.0
+		    	    set ::choices [iapp::get_items ltm node]
+		    	    return [iapp::safe_display ::choices]
+		    	}
+			string port display "small" required validator "PortNumber"
+		    	string connection_limit display "small" required default "0" validator "NonNegativeNumber"
+		    	string ratio display "small" required default "1" validator "NonNegativeNumber"
+		    }
+		}
+
+                text {
+		    var "Request routing parameters"
+		    var.policy_path "Full path to LTM policy"
+		    var.dc_host "DC-specific Host header value is equal to"
+                    var.gslb_host "GSLB Host header value is equal to"
+		    var.uri "URI starts with"
+
+		    monitor "Health monitor parameters"
+		    monitor.http_or_https "Monitor type (set http or https)"
+		    monitor.interval "Probe interval"
+		    monitor.timeout "Probe timeout"
+		    monitor.request "Probe request"
+		    monitor.response "Probe expected response"
+
+                    routestatus "Route status for BIG-IP DNS reporting"
+                    routestatus.routingvip "The IP address of the routing VIP"
+                    routestatus.interval "Interval for status checking of the local pool with Openshift containers"
+                    routestatus.timeout "Timeout for status checking of the local pool with Openshift containers"
+                    routestatus.bigipaddr "BIG-IP where check the pool status (normally set to localhost)"
+                    routestatus.bigipport "BIG-IP port where check the pool status (normally set to 443)"
+                    routestatus.bigipuser "BIG-IP user of the BIG-IP"
+                    routestatus.bigippasswd "Admin password of the BIG-IP"
+                    routestatus.bigipdebug "Turn debugging On or Off"
+
+		    pool "Pool member parameters"
+		    pool.slow_ramp_setvalue "Slow Ramp"
+		    pool.min_active_members "Min active members"
+		    pool.lb_method "Load balancing method"
+		    pool.tcp_queue_enabled_or_disabled "TCP queing on limit (set enabled or disabled)"
+		    pool.tcp_queue_length "Max number of requests to queue (value of 0 when enabled is discouraged = unlimited)"
+		    pool.tcp_queue_timeout "Max time in milliseconds the request might stay queued"
+		    pool.members "Which web servers should be included in this pool?"
+		    pool.members.addr "Node/IP address"
+		    pool.members.port "Port"
+		    pool.members.connection_limit "Connection limit"
+		    pool.members.ratio "Ratio"
+
+
+                }
+            }
+            role-acl { admin manager resource-admin }
+            run-as none
+        }
+    }
+    description none
+}

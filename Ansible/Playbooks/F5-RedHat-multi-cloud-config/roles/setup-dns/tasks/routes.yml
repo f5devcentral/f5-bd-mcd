@@ -1,0 +1,122 @@
+---
+
+### OC routes wide IPs
+
+- name: Add LTM virtual server in BIG-IP DNS (inner loop)
+  bigip_gtm_virtual_server:
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+    server_name: "LTM_DC_{{ dcname | upper }}"
+    name: "{{ ( '/' + application + '/' + inner_item + '__routestatus' ) | replace(app_baseurl, 'dc-' + dcname + '.' +app_baseurl ) }}"
+    address: "{{ routingvip[application] }}"
+    port: "{{ routingvip_port[application] }}"
+    translation_address: "{{ routingvip_translation[application] }}"
+    translation_port: "{{ routingvip_port_translation[application] }}"
+#    monitors:
+#      - bigip
+    state: present
+  delegate_to: localhost
+  with_items: "{{ wideips }}"
+  loop_control:
+    loop_var: inner_item
+
+- name: "Create BIG-IP DNS GSLB pool (inner loop)"
+  bigip_gtm_pool:
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+    partition: "{{ bigip_dns_partition }}"
+    name: "{{ inner_item }}_pool"
+    type: a
+    state: present
+  delegate_to: localhost
+  with_items: "{{ wideips }}"
+  loop_control:
+    loop_var: inner_item
+
+- name: "Create BIG-IP DNS DC-specific pool (inner loop)"
+  bigip_gtm_pool:
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+    partition: "{{ bigip_dns_partition }}"
+    name: "{{ inner_item | replace(app_baseurl, 'dc-' + dcname + '.' +app_baseurl ) }}_pool"
+    type: a
+    state: present
+  delegate_to: localhost
+  with_items: "{{ wideips }}"
+  loop_control:
+    loop_var: inner_item
+
+
+- name: Create BIG-IP DNS GSLB pool member (inner loop)
+  bigip_command:
+    commands: "modify gtm pool a {{ bigip_dns_partition }}/{{ inner_item }}_pool members add { LTM_DC_{{ dcname | upper }}:{{ ( '/' + application + '/' + inner_item + '__routestatus' ) | replace(app_baseurl, 'dc-' + dcname + '.' +app_baseurl ) }} }"
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+  delegate_to: localhost
+  with_items: "{{ wideips }}"
+  loop_control:
+    loop_var: inner_item
+
+- name: Create BIG-IP DNS DC-specific pool member (inner loop)
+  bigip_command:
+    commands: "modify gtm pool a {{ bigip_dns_partition }}/{{ inner_item | replace(app_baseurl, 'dc-' + dcname + '.' +app_baseurl ) }}_pool members add { LTM_DC_{{ dcname | upper }}:{{ ( '/' + application + '/' + inner_item + '__routestatus' ) | replace(app_baseurl, 'dc-' + dcname + '.' +app_baseurl ) }} }"
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+  delegate_to: localhost
+  with_items: "{{ wideips }}"
+  loop_control:
+    loop_var: inner_item
+
+- name: Create BIG-IP DNS GSLB wide-ip (inner loop)
+  bigip_gtm_wide_ip:
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+    partition: "{{ bigip_dns_partition }}"
+    name: "{{ inner_item }}"
+    type: a
+    state: present
+    pools: 
+      - name: "{{ inner_item }}_pool"
+    lb_method: "round-robin" 
+  delegate_to: localhost
+  with_items: "{{ wideips }}"
+  loop_control:
+    loop_var: inner_item
+
+- name: Create BIG-IP DNS DC-specific wide-ip (inner loop)
+  bigip_gtm_wide_ip:
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+    partition: "{{ bigip_dns_partition }}"
+    name: "{{ inner_item | replace(app_baseurl, 'dc-' + dcname + '.' +app_baseurl ) }}"
+    type: a
+    state: present
+    pools:
+      - name: "{{ inner_item | replace(app_baseurl, 'dc-' + dcname + '.' +app_baseurl ) }}_pool"
+    lb_method: "round-robin"
+  delegate_to: localhost
+  with_items: "{{ wideips }}"
+  loop_control:
+    loop_var: inner_item
+

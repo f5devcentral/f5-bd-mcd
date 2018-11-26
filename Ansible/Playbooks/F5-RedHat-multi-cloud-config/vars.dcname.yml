@@ -1,0 +1,91 @@
+### Replace everthing labled IPAddress with an IP eg. 192.168.1.100 some may require a CIDR notation represented by /24 in this template but it can be any apropriate value
+# DC dependant variables these are all ip addresses replace everthing after the : with a full IP eg. 192.168.1.100/24
+
+bigip_public_prefix: IPAddress/24
+bigip_external_prefix: IPAddress/24
+bigip_internal_prefix: IPAddress/24
+
+# VxLAN endpoint's MAC addresses are dummy but required, retrieve using oc get hostsubnet command
+vxlan_endpoints: 0a:0a:c0:a8:0a:79 { endpoint IPAddress } 0a:0a:c0:a8:0a:7a { endpoint IPAddress } 0a:0a:c0:a8:0a:7b { endpoint IPAddress }
+# This address is the BIG-IP VTEP in the SDN's VXLAN, It can be any IP address within a hostsubnet range that hasn't been allocated yet
+hostIP: IPAddress
+suboctet: 15
+
+f5_server_port: 443
+
+### This part of the architecture is for testing only, not supported, and not recomended for production deployments it allows for more rapid DNS transistion while you are in testing
+#--------------------------------------#
+# Used to contact signalDNS tesing tool
+dnshost: IPAddress 
+dnsport: 6677
+
+ltm_iquery: IPAddress
+ltm_iquery_translation:
+
+# This value can be anything that notes where the BIG-IP for this data center is located physically
+bigip_location: "On Premisses - San Jose"
+
+# Unlike dcname variable, dcnames variable (only used in ILX DNS tesing tool code right now) must have the dc- prefix added the included values are examples
+dcnames: "dc-onp dc-azr dc-aws dc-gcp"
+#--------------------------------------#
+
+### The variables in this section don't need to be DC specific
+
+# Unlike dns_host which is used from BIG-IP to signalDNS, bigip_dns is used 
+# to run bigip_dns modules (via iControl) from Ansible Tower
+bigip_dns: IPAddress
+bigip_dns_port: 443
+bigip_dns_partition: "/Common"
+bigip_dns_dc: "DC_ONP"
+bigip_dns_name: "DNS_DC_ONP"
+bigip_dns_location: "On Premisses - San Jose"
+
+dns_iquery: IPAddress
+
+### The Text in [brackets] below should be replaced brackets and all with the variable named inside the brackets. 
+#These can be whatever you would like to call them but must correlate to what you have set up in your environtments OpenShift Cluster, BIG-IP, and DNS
+
+app_baseurl: "[host name]"
+bigip_server: "{{ inventory_hostname }}"
+vxlan_prof: [vxlanProfileName]
+vxlan_tunname: [vxlanTunnelName]
+vxlan_selfip: [vxlanSelfipName]
+service_account: [bigip-ctlrName]
+hostsubnet_name: [HostSubnetName]
+
+clusterrole_configfile: f5-kctlr-openshift-clusterrole.yaml
+rolebinding_configfile: f5-kctlr-openshift-clusterrole-binding.yaml
+ccdeployment_configfile: f5-k8s-bigip-ctlr_openshift-sdn.tmpl.yaml
+hostsubnet_config: f5-kctlr-openshift-hostsubnet.tmpl.yaml
+
+### Application specific variables, these are all application specific the axamples below should be replaced with the example application information you have setup in your environment
+
+applications:
+  - appname
+
+ccdeployment_namespaces:
+  appname: kube-system
+
+routingvip: 
+  appname: "IPAddress"
+
+routingvip_translation:
+  appname: "IPAddress"
+
+routingvip_port: 
+  appname: "80" 
+
+# "0" stands for no translation
+routingvip_port_translation:
+  appname: "80"
+
+routing_vips:
+  appname: appname-routing-vip.tmpl.yaml
+
+route_tmpl_files:
+  appname: { appname.dc-tmpl.yoururl.com.yaml }
+
+app_wideips:
+  appname: { appname.yoururl.com }
+
+

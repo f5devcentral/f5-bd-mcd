@@ -1,0 +1,61 @@
+---
+
+### Delete Openshift non-network tasks
+
+- name: Delete secret for BIG-IP credentials
+  delegate_to: localhost
+  shell: oc delete secret bigip-login -n {{ ccdeployment_namespaces[item] }}
+  args:
+    warn: no
+  failed_when:
+    - result is not success
+    - "'deleted' not in result.msg"
+    - "'not found' not in result.stderr"
+  with_items: "{{ applications }}"
+
+- name: Delete cluster role for service account
+  delegate_to: localhost
+  shell: oc delete -f {{ role_path }}/../../files/{{ dcname }}/{{ rolebinding_configfile }} -n {{ ccdeployment_namespaces[item] }}
+  args:
+    warn: no
+  failed_when:
+    - result is not success
+    - "'deleted' not in result.msg"
+    - "'not found' not in result.stderr"
+  with_items: "{{ applications }}"
+
+- name: Delete cluster role created for service account
+  delegate_to: localhost
+  shell: oc delete -f {{ role_path }}/../../files/{{ dcname }}/{{ clusterrole_configfile }} -n {{ ccdeployment_namespaces[item] }}
+  args:
+    warn: no
+  failed_when:
+    - result is not success
+    - "'deleted' not in result.msg"
+    - "'not found' not in result.stderr"
+  with_items: "{{ applications }}"
+
+- name: Delete bigip ctlr service account
+  delegate_to: localhost
+  shell: oc delete serviceaccount {{ service_account }} -n {{ ccdeployment_namespaces[item] }}
+  args:
+    warn: no
+  failed_when:
+    - result is not success
+    - "'deleted' not in result.msg"
+    - "'not found' not in result.stderr"
+  with_items: "{{ applications }}"
+
+### Delete Openshift network tasks
+
+- name: Delete Host subnet Deployment configuration
+  delegate_to: localhost
+  shell: oc delete -f  {{ role_path }}/../../files/{{ dcname }}.{{ hostsubnet_config }}
+  args:
+    warn: no
+  failed_when:
+    - result is not success
+    - "'deleted' not in result.msg"
+    - "'not found' not in result.stderr"
+
+

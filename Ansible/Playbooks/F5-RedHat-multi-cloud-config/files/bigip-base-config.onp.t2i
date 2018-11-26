@@ -1,0 +1,52 @@
+@option(iapp-type): common
+
+@label(__local__public_prefix__): IP prefix for the public interface
+@label(__local__external_prefix__): IP prefix for the external interface
+@label(__local__internal_prefix__): IP prefix for the internal interface
+
+net vlan public {
+    interfaces {
+        1.2 {
+            tagged
+        }
+    }
+    tag 3
+}
+
+net vlan external {
+    interfaces {
+        1.2 {
+            tagged
+        }
+    }
+    tag 156
+}
+
+net vlan internal {
+    interfaces {
+        1.1 { }
+    }
+    tag 4094
+}
+
+net self public {
+    address __local__public_prefix__
+    allow-service none
+    traffic-group traffic-group-local-only
+    vlan public
+}
+
+net self external {
+    address __local__external_prefix__
+    allow-service all
+    traffic-group traffic-group-local-only
+    vlan external
+}
+
+net self internal {
+    address __local__internal_prefix__
+    allow-service all
+    traffic-group traffic-group-local-only
+    vlan internal
+}
+

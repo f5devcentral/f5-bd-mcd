@@ -1,0 +1,108 @@
+---
+
+### Create Openshift network tasks
+
+- name: Add policy to allow default-backend container to work in every name space
+  delegate_to: localhost
+  shell: "oc adm policy add-scc-to-user anyuid -z default --as=ocpadmin -n {{ item }}"
+  args:
+    warn: no
+  with_items: "{{ applications }}"
+
+- name: Create host subnet configuration using file {{ role_path }}/../../files/{{ dcname }}/{{ hostsubnet_config }}
+  delegate_to: localhost
+  shell: oc create -f {{ role_path }}/../../files/{{ dcname}}/{{ hostsubnet_config }}
+  args:
+    warn: no
+  register: result
+  failed_when:
+    - result is not success
+    - "'created' not in result.msg"
+    - "'AlreadyExists' not in result.stderr"
+
+# Ulises: added until check -- the Get Host subnet might fail becuase oc create is asynchronous
+- name: Get Host subnet on Openshift master
+  delegate_to: localhost
+  shell: oc get hostsubnet {{ hostsubnet_name }}  -o json
+  args:
+    warn: no
+  register: result
+  failed_when:
+    - result is not success
+    - "'created' not in result.msg"
+    - "'AlreadyExists' not in result.stderr"
+  until: (result.stdout|from_json).subnet != ""
+  retries: 30
+  delay: 2 
+
+- set_fact:
+    myout="{{ result.stdout|from_json }}"
+
+- debug:
+   var: myout
+
+- set_fact:
+    hostip="{{myout.hostIP }}"
+    subip="{{ myout.subnet.split('/')[0] }}"
+
+- set_fact:
+   new_subip="{{ subip.split('.')[0] }}.{{ subip.split('.')[1] }}.{{ subip.split('.')[2] }}.{{ suboctet }}"
+
+- name: "Show subip and new_subip"
+  debug:
+    msg: "subip: {{ subip }}, new_subip: {{ new_subip }}"
+
+
+### Create Openshift non network tasks
+
+- name: Create bigip ctlr service account
+  shell: oc create serviceaccount {{ service_account }} -n {{ ccdeployment_namespaces[item] }}
+  args:
+    warn: no
+  delegate_to: localhost
+  register: result
+  failed_when:
+    - result is not success
+    - "'AlreadyExists' not in result.stderr"
+    - "'created' not in result.msg"
+  with_items: "{{ applications }}"
+
+- name: Create cluster role for service account
+  shell: oc apply -f {{ role_path }}/../../files/{{ clusterrole_configfile }} -n {{ ccdeployment_namespaces[item] }}
+  args:
+    warn: no
+  delegate_to: localhost
+  register: result
+  failed_when:
+    - result is not success
+    - "'AlreadyExists' not in result.stderr"
+    - "'created' not in result.msg"
+  with_items: "{{ applications }}"
+
+
+- name: Create cluster role for service account
+  shell: oc apply -f {{ role_path }}/../../files/{{ rolebinding_configfile }} -n {{ ccdeployment_namespaces[item] }}
+  args:
+    warn: no
+  delegate_to: localhost
+  register: result
+  failed_when:
+    - result is not success
+    - "'AlreadyExists' not in result.stderr"
+    - "'created' not in result.msg"
+  with_items: "{{ applications }}"
+
+- name: Create generic secret for BIG-IP credentials
+  shell: oc create secret generic bigip-login --from-literal=username={{ bigip_user }} --from-literal=password={{ bigip_adminpass }} -n {{ ccdeployment_namespaces[item] }}
+  args:
+    warn: no
+  delegate_to: localhost
+  register: result
+  failed_when:
+    - result is not success
+    - "'AlreadyExists' not in result.stderr"
+    - "'created' not in result.msg"
+  with_items: "{{ applications }}"
+
+
+

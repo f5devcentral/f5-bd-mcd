@@ -1,0 +1,83 @@
+---
+
+### Actions in BIG-IP DNS after the applications has been deployed
+
+- name: "Create data center {{ bigip_dns_dc }} for BIG-IP DNS" 
+  bigip_gtm_datacenter:
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+    name: "{{ bigip_dns_dc }}"
+    location: "{{ bigip_dns_location }}"
+    state: present
+  delegate_to: localhost
+
+# Data Center must have been previously configured in BIG-IP DNS and it must be in /Common:
+# 0107141a:3: GTM object (/test/DC-onp of type: gtm_dc) can only be created in /Common.
+
+- name: Add BIG-IP DNS as a server
+  bigip_gtm_server:
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+    datacenter: "{{ bigip_dns_dc }}"
+    name: "{{ bigip_dns_name }}"
+    server_type: bigip
+    link_discovery: disabled
+    virtual_server_discovery: disabled
+#    virtual_server_discovery: enabled-no-delete
+    devices:
+      - name: "/Common/DNS_DC_{{ dcname | upper }}"
+        address: "{{ dns_iquery }}"
+    state: present
+  delegate_to: localhost
+
+
+- name: "Create data center DC_{{ dcname | upper }} for this DC's LTM"                    
+  bigip_gtm_datacenter:
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+    name: "DC_{{ dcname | upper}}"
+    location: "{{ bigip_location }}"
+    state: present
+  delegate_to: localhost
+
+- name: Add DC's BIG-IP LTM as a server in BIG-IP DNS
+  bigip_gtm_server:
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+    datacenter: "DC_{{ dcname | upper }}"
+    name: "LTM_DC_{{ dcname | upper }}"
+    server_type: bigip
+    link_discovery: disabled
+    virtual_server_discovery: disabled
+#    virtual_server_discovery: enabled-no-delete
+    devices:
+      - name: "/Common/LTM_DC_{{ dcname | upper }}"
+        address: "{{ ltm_iquery }}"
+        translation: "{{ ltm_iquery_translation }}"
+    state: present
+  delegate_to: localhost
+
+
+#- name: Add wildcard BIG-IP routing-vip to the BIG-IP DNS (outer loop)
+#  include_tasks: routing-vip.yml
+#    application={{ item }}
+#  with_items: "{{ applications }}"
+
+- name: Add all the explicit routes to the BIG-IP DNS (outer loop)
+  include_tasks: routes.yml
+    application={{ item.key }}
+    wideips={{ item.value }}
+  with_dict: "{{ app_wideips }}"
+

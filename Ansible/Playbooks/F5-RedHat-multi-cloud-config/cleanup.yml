@@ -1,0 +1,25 @@
+# cleanup.yml - MultiCloud Demo (MCD) main playbook for cleaning-up a deployment
+
+- hosts: bigip
+  gather_facts: no
+  vars_files:
+    - "vars.{{ dcname }}.yml"
+  environment:
+      F5_SERVER_PORT: "{{ f5_server_port }}"
+  pre_tasks:
+
+    - name: OC Login
+      delegate_to: localhost
+      shell: oc login {{ocurl }} -u {{ ocuser }} -p {{ ocpass }} --insecure-skip-tls-verify
+
+  roles:
+
+    - show-dcname
+    - update-dc-variables
+    - cleanup-dns
+    - cleanup-apps
+    - cleanup-bigip-network
+    - cleanup-openshift
+    - cleanup-bigip-base
+
+

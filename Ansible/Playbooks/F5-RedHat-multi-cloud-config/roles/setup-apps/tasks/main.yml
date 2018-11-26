@@ -1,0 +1,175 @@
+---
+
+### Actions in BIG-IP before the CC can be deployed
+
+# No longer needed because it is embedded in the ILX workspace
+#- name: "Copy the MDC iRule to the BIG-IP"
+#  copy:
+#    src: "{{ role_path }}/../../files/multisite-status"
+#    dest: "/tmp/multisite-status"
+#    mode: 0600
+
+- name: "Copy the MDC monitor to the BIG-IP"
+  copy:
+    src: "{{ role_path }}/../../files/os.mdc.monitor"
+    dest: "/tmp/os.mdc.monitor"
+    mode: 0600
+
+- name: "Create /config/monitors/lib folder in the BIG-IP"
+  shell: mkdir -p /config/monitors/lib
+  args:
+    warn: no
+
+- name: "Copy the bigipX.js file to the BIG-IP"
+  copy:
+    src: "{{ role_path }}/../../files/bigipX.js"
+    dest: "/config/monitors/lib"
+    mode: 0600
+
+- name: "Copy the os.routing-vip.tmpl iApp to the BIG-IP"
+  copy:
+    src: "{{ role_path }}/../../files/os.routing-vip.tmpl"
+    dest: "/tmp/os.routing-vip.tmpl"
+    mode: 0600
+
+- name: "Copy the os.route.tmpl iApp to the BIG-IP"
+  copy:
+    src: "{{ role_path }}/../../files/os.route.tmpl"
+    dest: "/tmp/os.route.tmpl"
+    mode: 0600
+
+- name: "Copy the ILX workspace to the BIG-IP"
+  copy:
+    src: "{{ role_path }}/../../files/MultiSite.{{ dcname }}.tgz"
+    dest: "/tmp/MultiSite.{{ dcname }}.tgz"
+    mode: 0600
+
+- name: Load the MCD monitor
+  bigip_command:
+    commands: create sys file external-monitor os.mdc.monitor source-path file:///tmp/os.mdc.monitor
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+
+# No longer needed because it is embedded in the ILX workspace
+#- name: Load the MCD iRule
+#  bigip_command:
+#    commands: load sys config merge file /tmp/multisite-status
+#    password: "{{ bigip_adminpass }}"
+#    server: "{{ bigip_server }}"
+#    user: "{{ bigip_user }}"
+#    validate_certs: "no"
+#  delegate_to: localhost
+
+- name: Load the MCD os.routing-vip.tmpl iApp
+  bigip_command:
+    commands: load sys config merge file /tmp/os.routing-vip.tmpl
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+
+- name: Load the MCD os.route.tmpl iApp
+  bigip_command:
+    commands: load sys config merge file /tmp/os.route.tmpl
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+
+- name: Load the ILX workspace
+  bigip_command:
+    commands: create ilx workspace multisite from-uri file:///tmp/MultiSite.{{ dcname }}.tgz 
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+
+# The name is defined in the iRule at ILX::init time
+- name: Create the ILX plugin
+  bigip_command:
+    commands: create ilx plugin multisite-plugin from-workspace multisite log-publisher local-db-publisher
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+  delegate_to: localhost
+
+### Deploy BIG-IP CC
+
+- name: Deploy BIG-IP Container Connector for Deployment config file
+  shell: oc apply -f {{ role_path }}/../../files/{{ dcname }}/{{ item}}.{{ ccdeployment_configfile }} -n {{ ccdeployment_namespaces[item] }}
+  args:
+    warn: no
+  delegate_to: localhost
+  register: result
+  failed_when:
+    - result is not success
+    - "'AlreadyExists' not in result.stderr"
+    - "'created' not in result.msg"
+  with_items: "{{ applications }}"
+
+- name: Create default-backend for the routing-vip
+  shell: oc apply -f {{ role_path }}/../../files/default-backend.yaml -n {{ item }}
+  args:
+    warn: no
+  delegate_to: localhost
+  register: result
+  failed_when:
+    - result is not success
+    - "'AlreadyExists' not in result.stderr"
+    - "'created' not in result.msg"
+  with_items: "{{ applications }}"
+
+- name: Add to the BIG-IP library the iApp file os.virtual-address.tmpl
+  delegate_to: localhost
+  bigip_iapp_template:
+    content: "{{ lookup('template', '../../files/os.virtual-address.tmpl') }}"
+    force: true
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+    state: "present"
+
+- name: Deploy the iApp os.virtual-address
+  delegate_to: localhost
+  bigip_iapp_service:
+    name: virtual-address-{{ item }}
+    template: os.virtual-address
+    force: true
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+    traffic_group: "traffic-group-local-only"
+    state: "present"
+    parameters:
+      variables:
+        - name: "var__routingvip"
+          value: "{{ item }}"
+  with_items: "{{ routingvip_translation.values() | unique }}"
+
+- name: Configure the routing-vip in the BIG-IP
+  shell: oc apply -f {{ role_path }}/../../files/{{ dcname }}/{{ item }}.routing-vip.tmpl.yaml -n {{ item }}
+  args:
+    warn: no
+  delegate_to: localhost
+  register: result
+  failed_when:
+    - result is not success
+    - "'AlreadyExists' not in result.stderr"
+    - "'created' not in result.msg"
+  with_items: "{{ applications }}"
+
+- name: Add the routes to the routing-vip in the BIG-IP (outer loop)
+  include_tasks: routes.yml
+    application={{ item.key }}
+    routes={{ item.value }}
+  with_dict: "{{ route_tmpl_files }}"
+

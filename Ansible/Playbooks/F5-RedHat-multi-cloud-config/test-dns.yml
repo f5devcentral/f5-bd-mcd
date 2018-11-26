@@ -1,0 +1,13 @@
+# test-dns.yml
+
+- hosts: bigip
+  user: root
+  vars_files:
+    - "vars.{{ dcname }}.yml"
+  environment:
+      F5_SERVER_PORT: "{{ f5_server_port }}"
+
+  roles: 
+
+    - setup-dns
+

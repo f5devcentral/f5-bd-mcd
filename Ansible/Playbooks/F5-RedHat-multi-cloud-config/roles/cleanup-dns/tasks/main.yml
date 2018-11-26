@@ -1,0 +1,82 @@
+---
+
+### Actions in BIG-IP DNS before the applications has been undeployed
+
+- name: Delete all the explicit routes to the BIG-IP DNS (outer loop)
+  include_tasks: routes.yml
+    application={{ item.key }}
+    wideips={{ item.value }}
+  with_dict: "{{ app_wideips }}"
+
+#- name: Delete wildcard BIG-IP routing-vip to the BIG-IP DNS (outer loop)
+#  include_tasks: routing-vip.yml
+#    application={{ item }}
+#  with_items: "{{ applications }}"
+
+- name: Delete DC's BIG-IP LTM as a server in BIG-IP DNS
+  bigip_gtm_server:
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+    datacenter: "DC_{{ dcname | upper }}"
+    name: "LTM_DC_{{ dcname | upper }}"
+    server_type: bigip
+    link_discovery: disabled
+    virtual_server_discovery: enabled-no-delete
+    devices:
+      - name: "/Common/LTM_DC_{{ dcname | upper}}"
+        address: "{{ ltm_iquery }}"
+#        translation: "{{ ltm_iquery_translation }}"
+    state: absent
+  delegate_to: localhost
+
+- name: "Delete data center DC_{{ dcname | upper }} in BIG-IP DNS"
+  bigip_gtm_datacenter:
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+    name: "DC_{{ dcname | upper }}"
+    location: "{{ bigip_location }}"
+    state: absent
+  delegate_to: localhost
+  when: ("DC_" + (dcname|upper)) != bigip_dns_dc
+
+- name: Delete BIG-IP DNS as a server
+  bigip_gtm_server:
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+    datacenter: "DC_{{ dcname | upper }}"
+    name: "DNS_DC_{{ dcname | upper }}"
+    server_type: bigip
+    link_discovery: disabled
+    virtual_server_discovery: disabled
+#    virtual_server_discovery: enabled-no-delete
+    devices:
+      - name: "/Common/DNS_DC_{{ dcname | upper }}"
+        address: "{{ dns_iquery }}"
+#        translation: "{{ ltm_iquery_translation }}"
+    state: absent
+  delegate_to: localhost
+  when: (("DC_" + (dcname|upper)) == bigip_dns_dc) and (delete_local_dns is defined) and (delete_local_dns == "True")
+
+- name: "Delete data center {{ bigip_dns_dc }} for BIG-IP DNS" 
+  bigip_gtm_datacenter:
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+    name: "{{ bigip_dns_dc }}"
+    location: "{{ bigip_dns_location }}"
+    state: absent
+  delegate_to: localhost
+  when: (("DC_" + (dcname|upper)) == bigip_dns_dc) and (delete_local_dns is defined) and (delete_local_dns == "True") 
+
+

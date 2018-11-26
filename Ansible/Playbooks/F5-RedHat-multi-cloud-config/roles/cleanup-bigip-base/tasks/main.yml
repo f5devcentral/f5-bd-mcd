@@ -1,0 +1,27 @@
+---
+
+- name: Undeploy the iApp bigip-base-config
+  delegate_to: localhost
+  bigip_iapp_service:
+    name: bigip-base-config
+    template: bigip-base-config.{{ dcname }}
+    force: true
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+    state: "absent"
+
+- name: Delete from the BIG-IP library the iApp file bigip-base-config.tmpl
+  delegate_to: localhost
+  bigip_iapp_template:
+    content: "{{ lookup('template', '../../files/bigip-base-config.{{ dcname }}.tmpl') }}"
+    force: true
+    password: "{{ bigip_adminpass }}"
+    server: "{{ bigip_server }}"
+    user: "{{ bigip_user }}"
+    validate_certs: "no"
+    state: "absent"
+
+
+

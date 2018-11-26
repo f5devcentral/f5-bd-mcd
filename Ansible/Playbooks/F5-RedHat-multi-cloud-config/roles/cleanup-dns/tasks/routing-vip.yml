@@ -1,0 +1,62 @@
+---
+
+### routing-vip.yml
+
+- name: Delete BIG-IP DNS wide-ip for routing-vip (inner loop)
+  bigip_gtm_wide_ip:
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+    partition: "{{ bigip_dns_partition }}"
+    name: "*.{{ app_baseurl }}"
+    type: a
+    state: absent
+    pools:
+      - name: "routing-vip_{{ application }}_pool"
+    lb_method: "round-robin"
+  delegate_to: localhost
+
+#- name: Create BIG-IP DNS pool member (inner loop)
+#  bigip_gtm_pool_member:
+#    server: "{{ bigip_dns }}"
+#    server_port: "{{ bigip_dns_port }}"
+#    user: "{{ bigip_user }}"
+#    password: "{{ bigip_adminpass }}"
+#    validate_certs: "no"
+#    partition: "{{ bigip_dns_partition }}"
+#    server_name: "BIGIP_DC_{{ dcname }}"
+#    virtual_server: "{{ ( '/' + application + '/' + inner_item + '__routestatus' ) | replace(app_baseurl, 'dc-' + dcname + '.' +app_baseurl ) }}"
+#    type: a
+#    pool: "{{ inner_item }}_pool"
+#    state: present
+#  delegate_to: localhost
+#  with_items: "{{ wideips }}"
+#  loop_control:
+#    loop_var: inner_item
+
+- name: Delete BIG-IP DNS pool member for routing-vip (inner loop)
+  bigip_command:
+    # /bookinfo/bookinfo-routing-vip
+    commands: "modify gtm pool a {{ bigip_dns_partition }}/routing-vip_{{ application }}_pool members del { BIGIP_DC_{{ dcname }}:/{{ application }}/{{ application }}-routing-vip }"
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+  delegate_to: localhost
+
+- name: Delete BIG-IP DNS pool for routing-vip (inner loop)
+  bigip_gtm_pool:
+    server: "{{ bigip_dns }}"
+    server_port: "{{ bigip_dns_port }}"
+    user: "{{ bigip_user }}"
+    password: "{{ bigip_adminpass }}"
+    validate_certs: "no"
+    partition: "{{ bigip_dns_partition }}"
+    name: "routing-vip_{{ application }}_pool"
+    type: a
+    state: absent
+  delegate_to: localhost
+

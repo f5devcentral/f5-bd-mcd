@@ -1,0 +1,6 @@
+
+- name: Show dcname and dcnames variables
+  delegate_to: localhost
+  debug:
+    msg: "dcname: {{ dcname }}, dcnames: {{ dcnames }} "
+

@@ -1,0 +1,173 @@
+# ILX
+
+- name: Copy the ILX workspace template
+  delegate_to: localhost
+  shell: |
+    rm -f {{ role_path }}/../../files/MultiSite.{{ dcname }}.tgz
+    rm -rf {{ role_path }}/../../files/MultiSite.{{ dcname }}
+    cp -r -f {{ role_path }}/../../files/MultiSite.tmpl {{ role_path }}/../../files/MultiSite.{{ dcname }}
+  args:
+    warn: no
+
+# Temporary directory for config maps and potentially anything non ILX stuff
+- name: Create temporary folder for config maps
+  delegate_to: localhost
+  shell: mkdir -p  {{ role_path }}/../../files/{{ dcname }}
+  args:
+    warn: no
+
+# Unlike dcname variable, dcnames variable (only used in ILX code right now) must have the dc- prefix added
+- name: Modify pattern %%thisDC%% to be {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/MultiSite.{{ dcname }}/rules/multisite-status.tcl"
+    regexp: '%%thisDC%%'
+    replace: 'dc-{{ dcname }}'
+
+- name: Modify pattern %%dnshost%% to be specific to DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/MultiSite.{{ dcname }}/rules/multisite-status.tcl"
+    regexp: '%%dnshost%%'
+    replace: '{{ dnshost }}'
+
+- name: Modify pattern %%dnsport%% to be specific to DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/MultiSite.{{ dcname }}/rules/multisite-status.tcl"
+    regexp: '%%dnsport%%'
+    replace: '{{ dnsport }}'
+
+- name: Modify %%dcnames%%
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/MultiSite.{{ dcname }}/rules/multisite-status.tcl"
+    regexp: '%%dcnames%%'
+    replace: '{{ dcnames }}'
+
+- name: Modify %%app_baseurl%%
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/MultiSite.{{ dcname }}/rules/multisite-status.tcl"
+    regexp: '%%app_baseurl%%'
+    replace: '{{ app_baseurl }}'
+
+- name: Create ILX workspace template .tar.gz file
+  delegate_to: localhost
+  shell: cd {{ role_path }}/../../files/MultiSite.{{ dcname }} && tar zcvf {{ role_path }}/../../files/MultiSite.{{ dcname }}.tgz *
+  args:
+    warn: no
+
+# hostsubnet_config
+
+- name: Copy template file for host subnet configuration
+  delegate_to: localhost
+  shell: cp -f {{ role_path }}/../../files/{{ hostsubnet_config }} {{ role_path }}/../../files/{{ dcname }}/{{ hostsubnet_config }}
+  args:
+    warn: no
+
+- name: Modify the host subnet config file to make it specific to DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/{{ dcname }}/{{ hostsubnet_config }}"
+    regexp: '(%%hostIP%%)'
+    replace: '{{ hostIP }}'
+
+# ccdeployment_configfile
+
+- name: Copy the template file for the CC deployment config file
+  delegate_to: localhost
+  shell: cp -f {{ role_path }}/../../files/{{ ccdeployment_configfile }} {{ role_path }}/../../files/{{ dcname }}/{{ item }}.{{ ccdeployment_configfile }}
+  args:
+    warn: no
+  with_items: "{{ applications }}"
+
+- name: Update the pattern %%bigip_server%% to make the CC deployment file specific to DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/{{ dcname }}/{{ item }}.{{ ccdeployment_configfile }}"
+    regexp: '%%bigip_server%%'
+    replace: '{{ bigip_server }}'
+  with_items: "{{ applications }}"
+
+- name: Update the pattern %%bigip_server%% to make the CC deployment file specific to DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/{{ dcname }}/{{ item }}.{{ ccdeployment_configfile }}"
+    regexp: '%%bigip_partition_name%%'
+    replace: '{{ item }}'
+  with_items: "{{ applications }}"
+
+- name: Update the pattern %%app_namespace%% to make the CC deployment file specific to DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/{{ dcname }}/{{ item }}.{{ ccdeployment_configfile }}"
+    regexp: '%%app_namespace%%'
+    replace: '{{ item }}'
+  with_items: "{{ applications }}"
+
+- name: Update the pattern %%ccdeployment_namespace%% to make the CC deployment file specific to DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/{{ dcname }}/{{ item }}.{{ ccdeployment_configfile }}"
+    regexp: '%%ccdeployment_namespace%%'
+    replace: '{{ ccdeployment_namespaces[item] }}'
+  with_items: "{{ applications }}"
+
+- name: Update the pattern %%vxlan_tunname%% to make the CC deployment file specific to DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/{{ dcname }}/{{ item }}.{{ ccdeployment_configfile }}"
+    regexp: '%%vxlan_tunname%%'
+    replace: '{{ vxlan_tunname }}'
+  with_items: "{{ applications }}"
+
+- name: Update the pattern %%f5_server_port%% to make the CC deployment file specific to DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/{{ dcname }}/{{ item }}.{{ ccdeployment_configfile }}"
+    regexp: '%%f5_server_port%%'
+    replace: '{{ f5_server_port }}'
+  with_items: "{{ applications }}"
+
+# routing-vip
+
+- name: Copy the template files for the routing-vip
+  delegate_to: localhost
+  shell: cp -f {{ role_path }}/../../files/routing-vip.tmpl.yaml {{ role_path }}/../../files/{{ dcname }}/{{ item }}.routing-vip.tmpl.yaml
+  args:
+    warn: no
+  with_items: "{{ applications }}"
+
+- name: Update the pattern %%application%% in the routing-vip config map for DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/{{ dcname }}/{{ item }}.routing-vip.tmpl.yaml"
+    regexp: '%%application%%'
+    replace: '{{ item }}'
+  with_items: "{{ applications }}"
+
+- name: Update the pattern %%routingvip_translation%% in the routing-vip config map for DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/{{ dcname }}/{{ item }}.routing-vip.tmpl.yaml"
+    regexp: '%%routingvip_translation%%'
+    replace: '{{ routingvip_translation[item] }}'
+  with_items: "{{ applications }}"
+
+- name: Update the pattern %%routingvip_port_translation%% in the routing-vip config map for DC {{ dcname }}
+  delegate_to: localhost
+  replace:
+    path: "{{ role_path }}/../../files/{{ dcname }}/{{ item }}.routing-vip.tmpl.yaml"
+    regexp: '%%routingvip_port_translation%%'
+    replace: '{{ routingvip_port_translation[item] }}'
+  with_items: "{{ applications }}"
+
+# route files
+
+- name: Route files (outer loop)
+  include_tasks: routes.yml
+    application={{ item.key }}
+    routes={{ item.value }}
+  with_dict: "{{ route_tmpl_files }}"
+

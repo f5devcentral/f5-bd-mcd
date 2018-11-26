@@ -1,0 +1,24 @@
+# site.yml - MultiCloud Demo (MCD) main playbook for setting up a deployment
+
+- hosts: bigip
+  gather_facts: no
+  vars_files:
+    - "vars.{{ dcname }}.yml"
+  environment:
+      F5_SERVER_PORT: "{{ f5_server_port }}"
+  pre_tasks:
+
+    - name: OC Login
+      delegate_to: localhost
+      shell: oc login {{ocurl }} -u {{ ocuser }} -p {{ ocpass }} --insecure-skip-tls-verify
+
+  roles: 
+
+    - show-dcname
+    - update-dc-variables
+    - setup-bigip-base
+    - setup-openshift
+    - setup-bigip-network
+    - setup-apps
+    - setup-dns
+
