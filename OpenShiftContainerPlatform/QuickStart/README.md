@@ -6,3 +6,10 @@ This is a placeholder read me for the Multi-CLoud POC quick start guide. This gu
 
 ## Detailed Guide Coming Soon...
 
+### Cloud Specific Configuration Differentials
+- [Amazon Web Services](https://github.com/f5devcentral/f5-bd-mcd/blob/master/OpenShiftContainerPlatform/QuickStart/CloudSpecificConfig/AWS.md)
+- [Microsoft Azure](https://github.com/f5devcentral/f5-bd-mcd/blob/master/OpenShiftContainerPlatform/QuickStart/CloudSpecificConfig/Azure.md)
+- [Google Cloud Platform](https://github.com/f5devcentral/f5-bd-mcd/blob/master/OpenShiftContainerPlatform/QuickStart/CloudSpecificConfig/GCP.md)
+- [The IBM Cloud](https://github.com/f5devcentral/f5-bd-mcd/blob/master/OpenShiftContainerPlatform/QuickStart/CloudSpecificConfig/IBM.md)
+
+

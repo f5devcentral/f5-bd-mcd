@@ -6,4 +6,4 @@ Much of the setup and configuration is taken from the documentation found on Red
 
 The size of the clusters we will use are small so that a new user to OpenShift can kick the tires useing this architecture with a minimial investmet to do so. The good news is that the exact same implementation can we scaled up from this simple design with relative ease using the tools that we will eploy during initial setup and configuration.
 
-To Get started you can follow the direction found [HERE](Inline link to quick start readme)
+To Get started you can follow the direction found [HERE](https://github.com/f5devcentral/f5-bd-mcd/tree/master/OpenShiftContainerPlatform/QuickStart "OpenShift Container Platform - QuickStart")

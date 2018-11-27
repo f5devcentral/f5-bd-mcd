@@ -45,8 +45,8 @@ Once you have the licensing informatoin just follow the instructions below.
 - Login to the management portal
 
 ### Cloud Specific Configuration Differentials
-- [Amazon Web Services](http://www.changethislink.com)
-- [Microsoft Azure](http://www.changethislink.com)
-- [Google Cloud Platform](http://www.changethislink.com)
-- [The IBM Cloud](http://www.changethislink.com)
+- [Amazon Web Services](https://github.com/f5devcentral/f5-bd-mcd/blob/master/BIG-IP/QuickStart/CloudSpecificConfig/AWS.md)
+- [Microsoft Azure](https://github.com/f5devcentral/f5-bd-mcd/blob/master/BIG-IP/QuickStart/CloudSpecificConfig/Azure.md)
+- [Google Cloud Platform](https://github.com/f5devcentral/f5-bd-mcd/blob/master/BIG-IP/QuickStart/CloudSpecificConfig/GCP.md)
+- [The IBM Cloud](https://github.com/f5devcentral/f5-bd-mcd/blob/master/BIG-IP/QuickStart/CloudSpecificConfig/IBM.md)
 

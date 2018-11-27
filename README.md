@@ -8,7 +8,7 @@ It is important to note that this architecure is in a continual state of evoluti
 
 To read about the concept and overview of what is contained in this repository please have a look the overview document at the link below
 
-[link placeholder]
+[F5 Red Hat Multi-cloud Architecture](https://github.com/f5devcentral/f5-bd-mcd/blob/master/Documents/F5RedHatMulticloudArchitecture.pdf "F5 Red Hat Multi-cloud Architecture")
 
 Note: Some of the information imparted in this repo could be considered by some as elementary. However it is not intended to frustrate or insult it is built so that nearly anyone with a background in computers could follow the instructions and end up with a similar solution to the one built by F5 and Red Hat.
 
