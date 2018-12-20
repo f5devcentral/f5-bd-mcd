@@ -10,6 +10,10 @@ To read about the concept and overview of what is contained in this repository p
 
 [F5 Red Hat Multi-cloud Architecture](https://github.com/f5devcentral/f5-bd-mcd/blob/master/Documents/F5RedHatMulticloudArchitecture.pdf "F5 Red Hat Multi-cloud Architecture")
 
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=3Etglg2lrGo
+" target="_blank"><img src="http://img.youtube.com/vi/3Etglg2lrGo/0.jpg" 
+alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" /></a>
+
 Note: Some of the information imparted in this repo could be considered by some as elementary. However it is not intended to frustrate or insult it is built so that nearly anyone with a background in computers could follow the instructions and end up with a similar solution to the one built by F5 and Red Hat.
 
 ## Repository Contents
@@ -26,5 +30,3 @@ Note: Some of the information imparted in this repo could be considered by some 
     * Quick Start (In Work)
         * Cloud Specific Configuration (In Work)
 * Sample Application Recommendations
-
-

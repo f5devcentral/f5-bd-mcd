@@ -83,7 +83,7 @@ I used wget which will need to be installed.
 yum install wget -y
 ```
 
-Downlod the latest install
+Download the latest install
 
 ```
 wget https://releases.ansible.com/ansible-tower/setup/ansible-tower-setup-latest.tar.gz
