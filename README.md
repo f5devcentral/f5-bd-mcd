@@ -12,7 +12,7 @@ To read about the concept and overview of what is contained in this repository p
 
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=3Etglg2lrGo
 " target="_blank"><img src="http://img.youtube.com/vi/3Etglg2lrGo/0.jpg" 
-alt="IMAGE ALT TEXT HERE" width="560" height="315" border="10" /></a>
+alt="IMAGE ALT TEXT HERE" width="640" height="360" border="10" /></a>
 
 Note: Some of the information imparted in this repo could be considered by some as elementary. However it is not intended to frustrate or insult it is built so that nearly anyone with a background in computers could follow the instructions and end up with a similar solution to the one built by F5 and Red Hat.
 
