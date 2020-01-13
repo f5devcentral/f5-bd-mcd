@@ -1,32 +1,50 @@
-# Multi-Cloud Reference Architecture
+# F5 Multi-Cluster Container Ingress Services
 
-Business Development teams at F5 and Red Hat teamed up to deliver a living architecture for deploying applications and services into an OpenShift Container Platform across multiple cloud environments.
+## Summary
+The Multi-Cluster architecture is a F5 Alliances product showcase and will be part of the F5 Automation Sandbox. This is built by F5 Business Development organization.
 
-It is important to note that this architecure is in a continual state of evolution and will change and grow as new platform and automation technologies change or become available.
+## Goal
+The Purpose of the multi cluster use case is to show how F5 Container Ingress Services can be used in conjunction with several other F5 Alliances integrations to demonstrate conducting an A / B Deployment of a web application.
 
-## Approach
+### Architectural Overview
+![Architecture Overview](/docs/images/overview.png)
 
-To read about the concept and overview of what is contained in this repository please have a look the overview document at the link below
+## Prerequisites
+Currently some of the set up for this architecture is a manual process. A method to build these POC environments via the F5 Provisioner is in progress. For this learning material you will need several prerequisites in place to begin.
 
-[F5 Red Hat Multi-cloud Architecture](https://github.com/f5devcentral/f5-bd-mcd/blob/master/Documents/F5RedHatMulticloudArchitecture.pdf "F5 Red Hat Multi-cloud Architecture")
+- Access to git preferable a valid GitHub account
+  - https://github.com/
+- A Jenkins Server
+  - https://jenkins.io/doc/book/installing/
+- A minimum of two OpenShift clusters
+  - https://docs.openshift.com/container-platform/3.11/welcome/index.html
+- Two Licensed BIG-IP VE appliances with Best licenses, one per cluster
+  - https://f5.com/products/trials/product-trials/product-trial
+- F5 Container Ingress Service - Installed
+  - https://clouddocs.f5.com/containers/v2/openshift/
 
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=3Etglg2lrGo
-" target="_blank"><img src="http://img.youtube.com/vi/3Etglg2lrGo/0.jpg" 
-alt="IMAGE ALT TEXT HERE" width="640" height="360" border="10" /></a>
+## Use Case Specific Prerequisites
+- Access to F5 Cloud Services (DNS Load Balancing)
+  - https://www.f5.com/products/ways-to-deploy/cloud-services/preview
+- Access to Equinix Smart Key
+  - https://www.equinix.com/services/edge-services/smartkey/
 
-Note: Some of the information imparted in this repo could be considered by some as elementary. However it is not intended to frustrate or insult it is built so that nearly anyone with a background in computers could follow the instructions and end up with a similar solution to the one built by F5 and Red Hat.
+## Getting started
 
-## Repository Contents
+Once the necessary infrastructure is in place users wil be able to run through the automation scenarios via Jenkins to demonstrate a A / B deployment scenario.
 
-* Ansible
-    * Ansible Tower
-        * Quick Start Guide
-    * Playbooks 
-        * F5-RedHat-multi-cloud-config (In Re-Work)
-* BIG-IP
-    * Quick Start
-        * Cloud Specific Configuration (In Work)
-* OpenShift Container Platform
-    * Quick Start (In Work)
-        * Cloud Specific Configuration (In Work)
-* Sample Application Recommendations
+The Multi-Cluster  can be used:
+- as a self learning tool to get familiar with OpenShift & Container Ingress Services for F5 BIG-IP
+- as a self learning tool to get familiar with Jenkins for Continual Deployment 
+- to build demos and proof of concepts
+- to understand:
+  - Ansible Automation
+  - Application Services 3
+  - F5AAS Service DNS load balancing
+  - F5 Integration with Equinix Smartkey
+
+Follow [Getting Started](docs/README.md) for detailed steps on how to build out the A / B Deployment setup.
+
+## Support
+
+This project is a community effort to promote container ingress service automation and is maintained by F5 BD. For any feature requests or issues, feel free to open an issue and we will give our best effort to address it.
