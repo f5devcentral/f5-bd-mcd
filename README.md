@@ -1,16 +1,16 @@
-# F5 Multi-Cluster Container Ingress Services
+# Multi-Cluster Design with F5 Container Ingress Services
 
 ## Summary
-The Multi-Cluster architecture is a F5 Alliances product showcase and will be part of the F5 Automation Sandbox. This is built by F5 Business Development organization.
+The Multi-Cluster Design is an F5 Alliances product showcase and will be part of the F5 Provisioner in the near future. This is built by F5 Business Development organization.
 
 ## Goal
-The Purpose of the multi cluster use case is to show how F5 Container Ingress Services can be used in conjunction with several other F5 Alliances integrations to demonstrate conducting an A / B Deployment of a web application.
+The Purpose of the multi cluster use case is to show how [F5 Container Ingress Services](https://github.com/F5Networks/k8s-bigip-ctlr) can be used in conjunction with several other F5 Alliances integrations to demonstrate conducting an A/B deployment of a web application.
 
-### Architectural Overview
-![Architecture Overview](/docs/images/overview.png)
+### Design Overview
+![Desiogn Overview](/docs/images/overview.png)
 
 ## Prerequisites
-Currently some of the set up for this architecture is a manual process. A method to build these POC environments via the F5 Provisioner is in progress. For this learning material you will need several prerequisites in place to begin.
+Currently some of the set up for this Design is a manual process. A method to build these POC environments via the F5 Provisioner is in progress. For this learning material you will need several prerequisites in place to begin.
 
 - Access to git preferable a valid GitHub account
   - https://github.com/
@@ -31,9 +31,9 @@ Currently some of the set up for this architecture is a manual process. A method
 
 ## Getting started
 
-Once the necessary infrastructure is in place users wil be able to run through the automation scenarios via Jenkins to demonstrate a A / B deployment scenario.
+Once the necessary servers and infrastructure are in place users will be able to run through the automation scenarios via Jenkins to demonstrate an A/B deployment scenario.
 
-The Multi-Cluster  can be used:
+The Multi-Cluster Design can be used:
 - as a self learning tool to get familiar with OpenShift & Container Ingress Services for F5 BIG-IP
 - as a self learning tool to get familiar with Jenkins for Continual Deployment 
 - to build demos and proof of concepts
