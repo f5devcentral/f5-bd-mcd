@@ -40,8 +40,8 @@ A/B Deployment Demo
     - Set productpagev2 in on prem to configured let job complete
     - Show load balancing via CLI
     ``` 
-    while true ; do dig +noall +answer productpage.f5bddemos.io @107.162.150.192 ; done
-    while true ; do dig +noall +answer productpage.f5bddemos.io @10.105.134.20 ; done
+    while true ; do dig +noall +answer productpage.yourdomain.io @[ip address] ; done
+    while true ; do dig +noall +answer productpage.yourdomain.io @[ip address] ; done
     ```
 - Upgrade app in second DC cloud    
     - Run job 2 to Set cloud to unconfigured
@@ -63,9 +63,9 @@ A/B Deployment Demo
     - run job 3 for basic app set GSLB to 50 50
     
     ``` 
-    while true ; do dig +noall +answer basicapp.f5bddemos.io @107.162.150.192 ; done
-    while true ; do dig +noall +answer basicapp.f5bddemos.io @10.105.134.20 ; done
-    ```
+    while true ; do dig +noall +answer productpage.yourdomain.io @[ip address] ; done
+    while true ; do dig +noall +answer productpage.yourdomain.io @[ip address] ; done
+   ```
 
     - Published to GSLB (Final state)
     - Validate app exists (DNS caching)
