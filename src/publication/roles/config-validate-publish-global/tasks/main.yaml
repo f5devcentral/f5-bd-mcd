@@ -1,0 +1,20 @@
+---
+
+- name: set single_quote fact
+  set_fact:
+    single_quote: "'"
+
+- name: show gslb_ratio
+  debug:
+    msg: "{{ gslb_ratio }}"
+
+- name: calculate total ratio 
+  set_fact: 
+    total_ratio: "{{ (gslb_ratio['aws']|int) + (gslb_ratio['onprem']|int) }}"
+
+- name: fail if total of ratios is not 100
+  fail:
+   msg: "Total of ratios must be 100: calculated total of ratios is {{ total_ratio }}"
+  when: (total_ratio|int) != 100
+
+

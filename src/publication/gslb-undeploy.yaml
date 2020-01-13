@@ -1,0 +1,14 @@
+- hosts: localhost
+  gather_facts: no
+  vars_files:
+    - "vars/common.yaml"
+    - "vars/appStates.requested.yaml"
+  roles: 
+
+# F5aaS GSLB actions apply the changes to all the DCs
+    - config-retrieve-params-publish-global
+    - f5aas-gslb-login
+    - f5aas-gslb-get-account-details
+    - f5aas-gslb-unpublish-subscription
+    - f5aas-gslb-logout
+

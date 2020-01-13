@@ -1,0 +1,31 @@
+---
+
+- name: "copying template for base AS3 declaration"
+  delegate_to: localhost
+  shell: |
+    cp files.input/as3-base.tmpl.json {{as3orig}}
+  args:
+    warn: no
+
+- name: apply settings to routing-vip template
+  delegate_to: localhost
+  replace:
+    path: "{{as3orig}}"
+    regexp: "{{ item.expr }}"
+    replace: "{{ item.replace }}"
+  with_items:
+      - { expr: '%%routingVIPTenant%%', replace: "{{as3Tenant}}" }
+      - { expr: '%%virtualAddress%%', replace: "{{dcVHostAddress[as3DC]}}" }
+
+
+- name: adding rules and pools to AS3 declaration
+  delegate_to: localhost
+  shell: |
+    set -e
+    jq --argjson rulesArray "$(< {{as3Rules }})" '.declaration.{{as3Tenant}}.RoutingVIP.RoutingRules.rules += $rulesArray' {{as3orig}} > {{as3dest}}
+    cp {{as3dest}} {{as3orig}}
+    jq --argjson rulesArray "$(< files.output/as3.{{as3Tenant}}/as3-merged-pools.json)" '.declaration.{{as3Tenant}}.RoutingVIP += $rulesArray' {{as3orig}} > {{as3dest}}
+    cp {{as3dest}} {{as3orig}}
+    cat {{as3orig}} | sed -e 's/\(.*\)/      \1/' > {{as3dest}}
+
+

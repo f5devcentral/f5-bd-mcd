@@ -1,0 +1,29 @@
+---
+#- name: debug
+#  debug: 
+#    msg: "{{ k8s_auth_results.k8s_auth.api_key }}"
+
+- name: "Apply k8s labels to the application's Service definition (inner loop)"
+  k8s:
+    state: present
+#    api_key: "{{ k8s_auth_results.k8s_auth.api_key }}"
+    definition:
+      apiVersion: v1
+      kind: Service
+      namespace: "{{ item.project }}"
+      metadata:
+        name: "{{ item.name }}"
+        namespace: "{{ item.project }}"
+        labels:
+          cis.f5.com/as3-app: "{{ vip }}"
+          cis.f5.com/as3-pool: "pool_{{ item.nameNormalized }}"
+          cis.f5.com/as3-tenant: "{{ as3tenant }}"
+      spec:
+        selector:
+          app: "{{item.name}}"
+
+# Next is not needed as part of the selector
+#
+#        ports:
+#          - protocol: TCP
+#            port: "{{item.servicePortAS3}}"

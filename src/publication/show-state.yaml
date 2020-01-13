@@ -1,0 +1,19 @@
+- hosts: localhost
+  gather_facts: no
+  vars_files:
+    - "vars/common.yaml"
+    - "vars/appStates.current.yaml"
+
+  roles:
+
+# gslb
+    - config-retrieve-params-publish-global
+    - f5aas-gslb-login
+    - f5aas-gslb-get-account-details
+    - f5aas-gslb-show-state
+    - f5aas-gslb-logout
+
+# as3
+
+    - as3-show-state
+

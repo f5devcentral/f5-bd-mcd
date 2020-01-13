@@ -1,0 +1,9 @@
+           
+           [ 
+            {
+              "virtual_server": "virtual_server_vHost_%%dcname%%",
+              "monitor": "%%monitor%%",
+              "ratio": %%uriHostGslbRatio%%
+            }
+           ]
+

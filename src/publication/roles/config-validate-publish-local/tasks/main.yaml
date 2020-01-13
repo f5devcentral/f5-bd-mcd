@@ -1,0 +1,39 @@
+---
+
+- name: set single_quote fact
+  set_fact:
+    single_quote: "'"
+
+- name: set query params
+  set_fact:
+    query_expression: "{{ 'state == ' + single_quote + 'bigip-configured' + single_quote + ' && dcname == ' + single_quote + dcname + single_quote }}"
+
+- name: set query output
+  set_fact:
+    query: "[?({{query_expression}})].{ uriHost: uriHost, uriPath: uritPath, dcname: dcname }"
+
+#- name: debug
+#  debug:
+#    msg: "query is {{query}}"
+
+#- name: debug
+#  set_fact:
+#    query_result: "{{ appState | json_query(query)}}"
+
+#- name: debug
+#  debug:
+#    msg: "query result is {{query_result}}"
+
+- name: "run query: retrieve the number of applications for DC {{dcname}}"
+  set_fact:
+    num_apps: "{{ appState | json_query(query) | length }}"
+
+- name: "run query: retrieve the number of applications for DC {{dcname}} without repetitions"
+  set_fact:
+    num_apps_unique: "{{ appState | json_query(query) | unique | length }}"
+
+- name: "Check validity of requested change in DC {{dcname}}"
+  fail:
+   msg: "The requested change makes repeated applications available for the same uriHost/uripath in the same DC ({{dcname}}). Additional info: num_apps ({{num_apps}}), num_apps_unique ({{num_apps_unique}})."
+  when: num_apps != num_apps_unique 
+

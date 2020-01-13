@@ -1,0 +1,13 @@
+    { 
+        "washington": {
+          "display_name": "Washington",
+          "sectors": [
+            {
+              "scale": "state",
+              "code": "Washington"
+            }
+          ]
+        }
+     }
+
+

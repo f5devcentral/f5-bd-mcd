@@ -1,0 +1,31 @@
+appState:
+  - dcname: aws
+    monitorTypeAS3: http
+    monitorTypeGslb: https_advanced
+    name: productpage-v1
+    nameNormalized: productpage_v1
+    project: bookinfo
+    receiveString: HTTP/1.
+    ruleFileAS3: clientSslFalse
+    sendString: 'GET / HTTP/1.1\\r\\nHost: productpage\\r\\n\\r\\n'
+    servicePortAS3: 9080
+    state: bigip-unconfigured
+    uriHost: productpage
+    uriHostGslbRatio: '0'
+    uriHostNormalized: productpage
+    uriPath: /
+  - dcname: onprem
+    monitorTypeAS3: http
+    monitorTypeGslb: https_advanced
+    name: productpage-v1
+    nameNormalized: productpage_v1
+    project: bookinfo
+    receiveString: HTTP/1.
+    ruleFileAS3: clientSslFalse
+    sendString: 'GET / HTTP/1.1\\r\\nHost: productpage\\r\\n\\r\\n'
+    servicePortAS3: 9080
+    state: bigip-unconfigured
+    uriHost: productpage
+    uriHostGslbRatio: '100'
+    uriHostNormalized: productpage
+    uriPath: /

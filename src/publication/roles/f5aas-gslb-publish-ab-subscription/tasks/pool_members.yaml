@@ -1,0 +1,43 @@
+---
+
+- name: debug proximity rules
+  debug:
+    msg: "debug pool member: looping with {{inner}}"
+
+- name: prepare the proximity rule JSON object, copy the template file
+  delegate_to: localhost
+  shell: |
+    set -e
+    cp "files.input/f5aas-gslb-pool_member.tmpl.json" "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-pool_member.{{inner.uriHost}}.{{inner.dcname}}.json"
+
+#- name: "get member's ratio"
+#  set_fact: 
+#    member_ratio: "{{ gslb_ratio[inner.dcname] }}"
+#
+#- name: show
+#  debug:
+#    msg: "{{ member_ratio }}"
+
+- name: prepare the pool member JSON object, parametrize the template file
+  delegate_to: localhost
+  replace:
+    path: "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-pool_member.{{inner.uriHost}}.{{inner.dcname}}.json"
+    regexp: "{{ inner2.expr }}"
+    replace: "{{ inner2.replace }}"
+  with_items:
+      - { expr: '%%dcname%%', replace: "{{inner.dcname}}" }
+      - { expr: '%%uriHostGslbRatio%%', replace: "{{gslb_ratio[inner.dcname]}}" }
+#      - { expr: '%%monitor%%', replace: "none" }
+      - { expr: '%%monitor%%', replace: "monitor_{{inner.uriHostNormalized}}" }
+  loop_control:
+    loop_var: inner2
+
+- name: add pool member to JSON document
+  include_tasks: library/json-add-dict-element.yaml
+  vars:
+    node: "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-pool_member.{{inner.uriHost}}.{{inner.dcname}}.json"
+    branch: ".configuration.gslb_service.pools.\"pool_{{inner.uriHostNormalized}}\".members"
+    leaf: ""
+    base: "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-update-subscription.tmpl.json"
+
+

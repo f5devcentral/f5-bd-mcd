@@ -1,0 +1,24 @@
+---
+
+- name: create pool file template
+  delegate_to: localhost
+  shell: |
+    cp files.input/as3-pool.tmpl.json {{as3Pool}}.{{item.nameNormalized}}
+
+- name: apply route settings to route file template
+  delegate_to: localhost
+  replace:
+    path: "{{as3Pool}}.{{item.nameNormalized}}"
+    regexp: "{{ inner.expr }}"
+    replace: "{{ inner.replace }}"
+  with_items:
+      - { expr: '%%rulePool%%', replace: "pool_{{item.nameNormalized}}" }
+      - { expr: '%%monitorTypeAS3%%', replace: "{{item.monitorTypeAS3}}" }
+      - { expr: '%%servicePortAS3%%', replace: "{{item.servicePortAS3}}" }
+  loop_control:
+    loop_var: inner
+
+- name: append to ordered lists of applications (pool)
+  set_fact:
+    as3PoolList: "{{ as3PoolList + ' ' + as3Pool + '.' +item.nameNormalized }}"
+

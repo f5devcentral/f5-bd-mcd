@@ -1,0 +1,9 @@
+{
+        "monitor_%%uriHostNormalized%%": {
+          "display_name": "monitor_%%uriHost%%",
+          "monitor_type": "%%monitorTypeGslb%%",
+          "send": "%%sendString%%",
+          "receive": "%%receiveString%%"
+        }
+}
+

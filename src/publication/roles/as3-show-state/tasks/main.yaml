@@ -1,0 +1,37 @@
+---
+
+- name: "banner: separator"
+  include_role:
+    name: banner_item
+  vars:
+    title: "###############"
+    item: ""
+
+- name: "banner: APP CONFIG STATE"
+  include_role:
+    name: banner_item
+  vars:
+    title: "APP CONFIG STATE"
+    item: ""
+
+- name: "show application, dc and state"
+  include_role:
+    name: banner_item
+  vars:
+    title: "{{ item.name }}"
+  with_items: '{{ appState | json_query("[].{name: name,dcname: dcname,state: state, uriHostGslbRatio: uriHostGslbRatio}") }}'
+
+- name: show appStates
+  debug:
+    msg: "{{ appState | to_nice_yaml(width=80, indent=2) }}"
+
+- name: register appStates
+  shell: |
+    cat vars/appStates.current.yaml
+  register: retval
+
+- name: show appStates
+  debug:
+    msg: "{{ retval.stdout_lines }}"
+
+

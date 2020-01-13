@@ -1,0 +1,42 @@
+---
+
+- name: prepare pool JSON objects, copy the template file
+  delegate_to: localhost
+  shell: |
+    set -e
+    cp "files.input/f5aas-gslb-pool.tmpl.json" "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-pool_{{ item.uriHost }}.json"
+
+- name: prepare pool JSON objects, parametrize the template file
+  delegate_to: localhost
+  replace:
+    path: "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-pool_{{ item.uriHost }}.json"
+    regexp: "{{ inner.expr }}"
+    replace: "{{ inner.replace }}"
+  with_items:
+      - { expr: '%%uriHost%%', replace: "{{ item.uriHost}}" }
+      - { expr: '%%uriHostNormalized%%', replace: "{{ item.uriHostNormalized}}" }
+  loop_control:
+    loop_var: inner
+
+- name: add pool JSON document
+  include_tasks: library/json-add-dict-element.yaml
+  vars:
+    node: "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-pool_{{ item.uriHost }}.json"
+    branch: ".configuration.gslb_service.pools"
+    leaf: ""
+    base: "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-update-subscription.tmpl.json"
+
+- name: "set query for pool members for uriHost {{ item.uriHost }}"
+  set_fact:
+    query_pool_members: "[?(({{query_expression}}) && (uriHost == '{{item.uriHost}}'))].{uriHost: uriHost, uriHostNormalized: uriHostNormalized, dcname: dcname}"
+
+- name: show
+  debug:
+    msg: "{{query_pool_members}}"
+
+- name: prepare the pool JSON object, create pool members
+  include_tasks: pool_members.yaml
+  with_items: '{{ appState | json_query(query_pool_members) | unique }}'
+  loop_control: 
+    loop_var: inner
+

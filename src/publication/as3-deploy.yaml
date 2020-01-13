@@ -1,0 +1,11 @@
+- hosts: localhost
+  gather_facts: no
+  vars_files:
+    - "vars/common.yaml"
+    - "vars/appStates.requested.yaml"
+  roles: 
+    - config-retrieve-params-publish-local
+    - as3-dc-prepare-routes
+    - as3-dc-prepare-main
+    - as3-dc-deploy
+

@@ -1,0 +1,28 @@
+---
+
+- name: prepare virtual servers JSON objects, copy the template file
+  delegate_to: localhost
+  shell: |
+    set -e
+    cp "files.input/f5aas-gslb-virtual_server.tmpl.json" "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-virtual_server.{{ item }}.json"
+
+- name: prepare virtual servers JSON objects, parametrize the template file
+  delegate_to: localhost
+  replace:
+    path: "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-virtual_server.{{ item }}.json"
+    regexp: "{{ inner.expr }}"
+    replace: "{{ inner.replace }}"
+  with_items:
+      - { expr: '%%dcName%%', replace: "{{item}}" }
+      - { expr: '%%dcGSLBAddress%%', replace: "{{dcGSLBAddress[item]}}" }
+  loop_control:
+    loop_var: inner
+
+- name: add virtual server to JSON document
+  include_tasks: library/json-add-dict-element.yaml
+  vars:
+    node: "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-virtual_server.{{item}}.json"
+    branch: ".configuration.gslb_service.virtual_servers"
+    leaf: ""
+    base: "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-update-subscription.tmpl.json"
+

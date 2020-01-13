@@ -1,0 +1,156 @@
+---
+
+- name: "initialize folder for GSLB_ZONE {{GSLB_ZONE}}"
+  delegate_to: localhost
+  shell: |
+    rm -f files.output/gslb-{{GSLB_ZONE}}/*
+    [ -d files.output/gslb-{{GSLB_ZONE}} ] && rmdir files.output/gslb-{{GSLB_ZONE}}
+    mkdir -p files.output/gslb-{{GSLB_ZONE}}
+    cp files.input/f5aas-gslb-update-subscription.tmpl.json files.output/gslb-{{GSLB_ZONE}}
+
+- name: retrieve list of existing GSLB subscriptions
+  delegate_to: localhost
+  uri:
+    url: "https://{{F5AAS_SERVER}}/{{API_VERSION}}/svc-subscription/subscriptions?status=_allStatusFilter&account_id={{ACCOUNT_ID}}&service_type=gslb"
+    method: GET
+    return_content: yes
+    status_code: 200
+    headers:
+      Accept: application/json
+      Authorization: "Bearer {{ACCESS_TOKEN}}"
+      Host: api.cloudservices.f5.com
+  register: f5aas_list_subscriptions
+
+- name: filter list of GSLB subscriptions based on zone name
+  set_fact:
+    subscription_id: "{{ f5aas_list_subscriptions.json | json_query(query) | first | default('') }}"
+  vars: 
+    query: "subscriptions[?configuration.gslb_service.zone=='{{GSLB_ZONE}}'].subscription_id"
+
+#- name: get catalogs
+#  delegate_to: localhost
+#  uri:
+#    url: https://{{F5AAS_SERVER}}/{{API_VERSION}}/svc-catalog/catalogs
+#    method: GET
+#    return_content: yes
+#    status_code: 200
+#    headers:
+#      Accept: application/json
+#      Authorization: "Bearer {{ACCESS_TOKEN}}"
+#  register: f5aas_catalogs_details
+
+#- name: show catalogs
+#  debug:
+#    msg: "{{f5aas_catalogs_details.json | to_nice_json }}"
+
+- name: initial GSLB subscription create
+  delegate_to: localhost
+  uri:
+    url: https://{{F5AAS_SERVER}}/{{API_VERSION}}/svc-subscription/subscriptions
+    method: POST
+    body: "{{ lookup('template','files.input/f5aas-gslb-create-empty-service.json') }}"
+    body_format: json
+    return_content: yes
+    status_code: 200
+    headers:
+      Accept: application/json
+      Authorization: "Bearer {{ACCESS_TOKEN}}"
+  when: subscription_id == "" 
+  register: f5aas_subscription_details
+
+#- name: end
+#  meta: end_play
+
+- name: set subscription_id when initial GSLB subscription create
+  set_fact:
+    subscription_id: "{{ f5aas_subscription_details.json.subscription_id }}"
+  when: subscription_id == ""
+
+- name: set convinience variables
+  set_fact: 
+    single_quote: "'"
+
+- name: build query expression for gslbDC variable
+  set_fact:
+    query_expression: "*"
+
+- name: set gslbDC variable to all DCs
+  set_fact:
+    gslbDC: "{{ appState | json_query(query) | unique}}"
+  vars:
+    query: "[?({{query_expression}})].dcname"
+
+- name: show gslbDC
+  debug:
+    msg: "gslbDC is {{ gslbDC }}"
+ 
+#- name: end
+#  meta: end_play
+
+#- name: add regions
+#  include_tasks: region.yaml
+#  with_items: '{{ appState | json_query(query)}}'
+#  vars:
+#    query: "[?({{query_expression}})].{name: name, region: region}"
+
+- name: add virtual server (vHost) JSON objects
+  include_tasks: virtual_server.yaml
+  with_items: "{{ gslbDC }}"
+
+- name: add pool JSON objects
+  include_tasks: pool.yaml
+  with_items: '{{ appState | json_query(query) | unique}}'
+  vars:
+    query: "[?({{query_expression}})].{uriHost: uriHost, uriHostNormalized: uriHostNormalized}"
+
+- name: add load balanced record JSON objects
+  include_tasks: load_balanced_record.yaml
+  with_items: '{{ appState | json_query(query) | unique}}'
+  vars:
+    query: "[?({{query_expression}})].{uriHost: uriHost, uriHostNormalized: uriHostNormalized}"
+
+- name: add monitor JSON objects 
+  include_tasks: monitor.yaml
+  with_items: '{{ appState | json_query(query) | unique}}'
+  vars:
+    query: "[?({{query_expression}})].{uriHost: uriHost, uriHostNormalized: uriHostNormalized, monitorTypeGslb: monitorTypeGslb, sendString: sendString, receiveString: receiveString }"
+
+- name: update GSLB subscription
+  delegate_to: localhost
+  uri:
+    url: https://{{F5AAS_SERVER}}/{{API_VERSION}}/svc-subscription/subscriptions/{{subscription_id}}
+    method: PUT
+    body: "{{ lookup('template','files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-update-subscription.tmpl.json') }}"
+    body_format: json
+    return_content: yes
+    status_code: 200
+    headers:
+      Accept: application/json
+      Authorization: "Bearer {{ACCESS_TOKEN}}"
+  register: f5aas_subscription_details
+
+- name: update GSLB subscription - show return value
+  debug:
+    msg: "{{ f5aas_subscription_details }}"
+  when: VERBOSE == "true"
+
+#- pause:
+#    seconds: 30
+
+- name: activate GSLB subscription
+  delegate_to: localhost
+  uri:
+    url: https://{{F5AAS_SERVER}}/{{API_VERSION}}/svc-subscription/subscriptions/{{subscription_id}}/activate
+    method: POST
+    return_content: yes
+    status_code: 200
+    headers:
+      Accept: application/json
+      Authorization: "Bearer {{ACCESS_TOKEN}}"
+  register: f5aas_activation_details
+
+- name: activate GSLB subscription - show return value
+  debug:
+    msg: "{{ f5aas_activation_details }}"
+  when: VERBOSE == "true"
+

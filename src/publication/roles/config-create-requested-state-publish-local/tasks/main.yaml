@@ -1,0 +1,36 @@
+---
+
+- name: "Set convinience facts"
+  set_fact:
+    single_quote: "'"
+
+- name: "Set query expression"
+  set_fact:
+    query_expression: "[?( {{ 'name == ' + single_quote + application + single_quote + ' && dcname == ' + single_quote + dcname + single_quote }})]"
+
+- name: "Show query expression"
+  debug:
+    msg: "query_expression is {{query_expression}}"
+
+- name: "Retrieve matching element from appState array"
+  set_fact:
+    appElement: "{{ appState |  json_query(query_expression) | unique}}"
+  failed_when: appElement == []
+
+- name: "Update the state of application {{application}} in DC {{dcname}}"
+  include_tasks: library/json-modify-appState-element.yaml
+  vars:
+    element: "{{ appElement }}"
+    key: "state"
+    value: "{{application_requested_state}}"
+
+- name: crete new appState variable
+  set_fact:
+    newAppState: "{ 'appState': {{newState}} }"
+
+- name: save requested appStates 
+  copy: content="{{ newAppState | to_nice_yaml(width=80, indent=2) | indent(2)  }}" dest=vars/appStates.requested.yaml
+  
+
+
+

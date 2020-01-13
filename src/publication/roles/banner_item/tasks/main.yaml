@@ -1,0 +1,25 @@
+---
+
+- name: prepare virtual servers JSON objects, copy the template file
+  delegate_to: localhost
+  shell: |
+    export COLUMNS=1000
+    banner "{{title}}"
+  register: output
+
+#  delegate_to: localhost
+#  shell: |
+#    banner "{{title}}"
+#  register: output
+
+- name: show banner
+  debug:
+    msg: "{{output.stdout_lines}}"
+
+- name: show item
+  debug:
+    msg: "{{ item }}"
+  when: item != ""
+#  when: item is defined"
+
+

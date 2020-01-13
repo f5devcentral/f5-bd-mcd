@@ -1,0 +1,21 @@
+---
+
+- set_fact:
+    single_quote: "'"
+
+- name: "modify uriHostGslbRatio for each appState item"
+  include_tasks: library/json-modify-appState-element.yaml
+  with_items: "{{appState}}" 
+  vars:
+    element: "[{{ item }}]"
+    key: "uriHostGslbRatio"
+    value: "{{gslb_ratio[item.dcname]}}"
+
+- name: crete new appState variable
+  set_fact:
+    newAppState: "{ 'appState': {{newState}} }"
+
+- name: save requested appStates 
+  copy: content="{{ newAppState | to_nice_yaml(width=80, indent=2) | indent(2)  }}" dest=vars/appStates.requested.yaml
+
+

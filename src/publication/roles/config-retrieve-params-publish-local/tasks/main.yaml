@@ -1,0 +1,55 @@
+---
+
+- name: "set build parameters's environment variables as ansible facts" 
+  delegate_to: localhost
+  set_fact:
+    application: "{{ lookup('env','APPNAME') }}"
+#    host: "{{ lookup('env','HOST') }}"
+    dcname: "{{ lookup('env','DCNAME') }}"
+    application_requested_state: "{{ lookup('env','REQUESTED_STATE') }}"
+
+- name: "set variables for AS3 ansible"
+  delegate_to:
+  set_fact:
+    as3DC: "{{dcname}}"
+
+- name: "set variables for requested state published-locally"
+  set_fact:
+    GSLB_ZONE: "{{dcname}}.{{BASE_ZONE}}"
+  when: application_requested_state == "published-locally"
+
+- name: "set variables for requested state published-globally"
+  set_fact:
+    GSLB_ZONE: "{{GSLB_NAME}}.{{BASE_ZONE}}"
+  when: (application_requested_state == "published-globally")
+
+- name: "build gslbDC array with applications with state published-locally or published-globally"
+  set_fact:
+    gslbDC: "{{ appState | json_query(\"[?((state == 'published-globally') || (state == 'published-globally'))].dcname\") }}"
+  when: ((application_requested_state == "published-globally") or (application_requested_state == "published-locally"))
+
+- name: show dcname
+  debug:
+    msg: "{{ dcname }}"
+
+- name: show gslbDC
+  debug:
+    msg: "gslbDC: {{gslbDC}}"
+  when: ((application_requested_state == "published-globally") or (application_requested_state == "published-locally"))
+
+- name: "add this application's DC to gslbDC array"
+  set_fact:
+    gslbDC: "{{ gslbDC + [dcname] }}"
+  when: ((application_requested_state == "published-globally") or (application_requested_state == "published-locally"))
+
+- name: show gslbDC
+  debug:
+    msg: "gslbDC: {{gslbDC}}"
+  when: ((application_requested_state == "published-globally") or (application_requested_state == "published-locally"))
+
+- name: "setting up variables for AS3"
+  set_fact:
+    as3orig: "files.output/as3.{{as3Tenant}}/as3-base.tmpl.json"
+    as3dest: "files.output/as3.{{as3Tenant}}/as3-base.{{as3Tenant}}.json"
+    as3Rules: "files.output/as3.{{as3Tenant}}/as3-merged-rules.json"
+

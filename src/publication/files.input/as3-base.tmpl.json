@@ -1,0 +1,80 @@
+{
+  "class":"AS3",
+  "action":"deploy",
+  "persist":true,
+  "declaration":{
+    "class":"ADC",
+    "schemaVersion":"3.10.0",
+    "id":"AS3-demo",
+    "label":"AS3 demo",
+    "remark":"AS3 demo",
+    "controls": {
+        "class": "Controls",
+        "logLevel": "debug",
+        "trace": true 
+    },
+    "%%routingVIPTenant%%": {
+        "class": "Tenant",
+        "RoutingVIP": {
+            "class": "Application",
+            "template": "https",
+            "serviceMain": {
+                "class": "Service_HTTPS",
+                "policyEndpoint": "RoutingRules",
+                "snat": "auto",
+                "virtualAddresses": [ 
+                   "%%virtualAddress%%"
+                ],
+                "policyWAF": {
+                    "use": "OWASPAutoTune"
+                },
+                "securityLogProfiles": [
+                   { "bigip": "/Common/Request and Response logging" } 
+                ],
+                "serverTLS": "frontside",
+                "clientTLS": "backends"
+            },
+            "OWASPAutoTune": {
+                "class": "WAF_Policy",
+                "file": "/shared/mgmt/Common_WAF_Policy.xml",
+                "ignoreChanges": true
+            },
+            "RoutingRules": {
+                "class": "Endpoint_Policy",
+                "rules": [
+                  {
+                     "name": "default",
+                     "conditions": [
+                      ],
+                      "actions": [
+                         {
+                           "type": "httpRedirect",
+                           "event": "request",
+                           "location": "https://www.f5.com"
+                         }
+                      ]
+                  }
+                ]
+            },
+            "frontside": {
+                  "class": "TLS_Server",
+                   "certificates": [
+                        {
+                           "certificate": "webcert"
+                        }
+                   ]
+            },
+            "backends": {
+            "class": "TLS_Client",
+            "clientCertificate": "webcert"
+            },
+            "webcert": {
+               "class": "Certificate",
+               "certificate": {"bigip":"/Common/star.f5bddemos.io.crt"},
+               "privateKey": {"bigip":"/Common/star.f5bddemos.io.key"}
+              }
+        }
+    }
+}
+}
+

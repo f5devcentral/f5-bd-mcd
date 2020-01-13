@@ -1,0 +1,8 @@
+---
+
+- name: "show parameters for AS3 ansible playbooks"
+  debug: 
+    msg: "as3DC is {{as3DC}}"
+
+
+

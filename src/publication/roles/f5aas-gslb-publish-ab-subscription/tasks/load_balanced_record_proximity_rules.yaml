@@ -1,0 +1,34 @@
+---
+
+- name: debug proximity rules
+  debug:
+    msg: "debug proximity rules: looping with {{inner}}"
+
+- name: prepare the proximity rule JSON object, copy the template file
+  delegate_to: localhost
+  shell: |
+    set -e
+    cp "files.input/f5aas-gslb-proximity_rule.tmpl.json" "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-proximity_rule.{{inner.uriHost}}.{{inner.dcname}}.json"
+
+- name: prepare the proximity rule JSON object, parametrize the template file
+  delegate_to: localhost
+  replace:
+    path: "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-proximity_rule.{{inner.uriHost}}.{{inner.dcname}}.json"
+    regexp: "{{ inner2.expr }}"
+    replace: "{{ inner2.replace }}"
+  with_items:
+      - { expr: '%%region%%', replace: "{{inner.region}}" }
+      - { expr: '%%dcname%%', replace: "{{inner.dcname}}" }
+      - { expr: '%%uriHost%%', replace: "{{inner.uriHost}}" }
+      - { expr: '%%dcscore%%', replace: "100" }
+  loop_control:
+    loop_var: inner2
+
+- name: add proximity rule to JSON document
+  include_tasks: library/json-add-dict-element.yaml
+  vars:
+    node: "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-proximity_rule.{{inner.uriHost}}.{{inner.dcname}}.json"
+    branch: ".configuration.gslb_service.load_balanced_records.\"{{inner.uriHost}}\".proximity_rules"
+    leaf: ""
+    base: "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-update-subscription.tmpl.json"
+

@@ -1,0 +1,55 @@
+---
+
+#- name: OC Log in (obtain access token)
+#  k8s_auth:
+#    username: "{{OCUSER}}"
+#    password: "{{OCPASS}}"
+#    host: "{{ocUrl[dcname]}}"
+#    validate_certs: false
+#  register: k8s_auth_results
+
+- name: OC Log in (using shell command)
+  shell: |
+    {{ OC }} login {{ocUrl[dcname]}} -u {{OCUSER}} -p {{OCPASS}} --insecure-skip-tls-verify=true
+
+#- name: Get kubeconfig
+#    k8s_facts:
+#      kubeconfig: "kubeconfig"
+#      host: "{{ocUrl[dcname]}}"
+#      api_version: v1
+#      kind: Service
+#      namespace: kube-system
+#    register: service
+
+- name: "Apply OC labels to the the application's Service definition (outer loop)"
+  include_tasks: apply_k8s_labels.yaml
+  with_items: '{{ appState | json_query(query)}}'
+  vars:
+    query: "[?((dcname == '{{as3DC}}') && (name == '{{application}}'))].{name: name, nameNormalized: nameNormalized, project: project, servicePortAS3: servicePortAS3}"
+    vip: "RoutingVIP"
+    as3tenant: "{{ as3Tenant }}"
+
+- name: Publishing AS3 declaration for F5 CIS controller
+  delegate_to: localhost
+  shell: |
+    cat files.input/k8s-bigip-cltr-configmap.tmpl.yaml {{as3dest}} > files.output/as3.{{as3Tenant}}/k8s-cis-as3-configmap.yaml
+
+- name: Deploy Config Map for BIG-IP Container Ingress Services controller
+  k8s:
+    state: present
+#    api_key: "{{ k8s_auth_results.k8s_auth.api_key }}"
+    namespace: kube-system
+    src: "files.output/as3.{{as3Tenant}}/k8s-cis-as3-configmap.yaml"
+      
+#- name: Create default-backend for the routing-vip
+#  shell: oc apply -f {{ role_path }}/../../files/default-backend.yaml -n {{ item }}
+#  args:
+#    warn: no
+#  delegate_to: localhost
+#  register: result
+#  failed_when:
+#    - result is not success
+#    - "'AlreadyExists' not in result.stderr"
+#    - "'created' not in result.msg"
+#  with_items: "{{ applications }}"
+

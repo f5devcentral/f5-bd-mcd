@@ -1,0 +1,10 @@
+- hosts: localhost
+  gather_facts: no
+  vars_files:
+    - "vars/common.yaml"
+  roles: 
+
+    - config-retrieve-params-publish-local
+    - cis-install
+  
+

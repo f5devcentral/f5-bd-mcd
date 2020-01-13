@@ -1,0 +1,9 @@
+- hosts: localhost
+  gather_facts: no
+  vars_files:
+    - "vars/common.yaml"
+    - "vars/appStates.requested.yaml"
+  roles: 
+    - config-retrieve-params-publish-global
+    - config-validate-publish-global
+

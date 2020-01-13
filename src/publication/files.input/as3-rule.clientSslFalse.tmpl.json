@@ -1,0 +1,44 @@
+                [
+                    {
+                        "name": "%%rulePool%%",
+                        "actions": [
+                            {
+                                "event": "request",
+                                "select": {
+                                    "pool": {
+                                        "use": "%%rulePool%%"
+                                    }
+                                },
+                                "type": "forward"
+                            },
+                            {
+                                "type": "clientSsl",
+                                "enabled": false
+                            }
+                        ],
+                        "conditions": [
+                            {  
+                                "type": "httpHeader", 
+                                "event": "request",
+                                "name": "Host",
+                                "all": {
+                                    "operand": "starts-with",
+                                    "values": [
+                                        "%%dcHost%%"
+                                    ]
+                                }
+                            },
+                            {
+                                "type": "httpUri",
+                                "event": "request",
+                                "path": {
+                                    "operand": "starts-with",
+                                    "values": [
+                                        "%%uriPath%%"
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                ]
+

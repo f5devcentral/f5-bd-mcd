@@ -1,0 +1,13 @@
+    { 
+        "california": {
+          "display_name": "California",
+          "sectors": [
+            {
+              "scale": "state",
+              "code": "California"
+            }
+          ]
+        }
+    }
+
+

@@ -1,0 +1,19 @@
+---
+
+- name: backup previous appStates
+  shell: |
+    git mv -f vars/appStates.current.yaml vars/appStates.current.yaml.old
+
+- name: set requested state as current
+  shell: |
+    echo >> vars/appStates.requested.yaml
+    cp -f vars/appStates.requested.yaml vars/appStates.requested.yaml.tmp
+    git mv -f vars/appStates.requested.yaml vars/appStates.current.yaml
+    mv -f vars/appStates.requested.yaml.tmp vars/appStates.requested.yaml
+    
+- name: update git repository
+  shell: |
+    git add -v -A vars/appStates.*
+    git commit -m "{{msg}}"
+#    git push -u origin master
+

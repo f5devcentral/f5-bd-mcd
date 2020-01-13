@@ -1,0 +1,57 @@
+---
+
+### misc setup
+
+- name: setting up variables
+  set_fact:
+    as3Rule: "files.output/as3.{{as3Tenant}}/as3-rule.tmpl.json"
+    as3Pool: "files.output/as3.{{as3Tenant}}/as3-pool.tmpl.json"
+
+- name: initialize tenant folder
+  delegate_to: localhost
+  shell: |
+    rm -f files.output/as3.{{as3Tenant}}/*
+    [ -d files.output/as3.{{as3Tenant}} ] && rmdir files.output/as3.{{as3Tenant}}
+    mkdir -p files.output/as3.{{as3Tenant}}
+
+### routes
+
+- name: initialize rule list
+  set_fact: 
+    as3RuleList: ""
+
+- name: "loop through applications for DC {{as3DC}}"
+  include_tasks: route.yaml
+  with_items: '{{ appState | json_query(query)}}'
+  vars:
+    query: "[?((dcname == '{{as3DC}}') && (state != 'bigip-unconfigured'))].{nameNormalized: nameNormalized, uriHost: uriHost, uriPath: uriPath, ruleFileAS3: ruleFileAS3}"
+
+- name: show rule list
+  debug:
+    msg: "{{as3RuleList}}"
+  
+- name: create merged route rules
+  shell: |
+    jq add -s {{as3RuleList}} > files.output/as3.{{as3Tenant}}/as3-merged-rules.json
+
+### pools
+
+- name: initialize pool list
+  set_fact:
+    as3PoolList: ""
+
+- name: create empty pools for each application for this DC
+  include_tasks: pool.yaml
+  with_items: '{{ appState | json_query(query)}}'
+  vars:
+    query: "[?((dcname == '{{as3DC}}') && (state != 'bigip-unconfigured'))].{nameNormalized: nameNormalized, servicePortAS3: servicePortAS3, monitorTypeAS3: monitorTypeAS3}"
+
+- name: show pool list
+  debug:
+    msg: "{{as3PoolList}}"
+
+- name: create merged pool list
+  shell: |
+    jq add -s {{as3PoolList}} > files.output/as3.{{as3Tenant}}/as3-merged-pools.json
+
+

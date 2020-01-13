@@ -1,0 +1,16 @@
+                 {
+                    "%%rulePool%%": {
+                        "class": "Pool",
+                        "monitors": [
+                            "%%monitorTypeAS3%%"
+                        ],
+                        "members": [
+                            {
+                                "servicePort": %%servicePortAS3%%,
+                                "serverAddresses": []
+                            }
+                        ]
+                    }
+                 }
+
+

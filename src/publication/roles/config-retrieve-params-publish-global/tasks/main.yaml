@@ -1,0 +1,18 @@
+---
+
+- name: "set build parameters's environment variables as ansible facts" 
+  delegate_to: localhost
+  set_fact:
+    host: "{{ lookup('env','HOST') }}"
+    gslb_ratio_aws: "{{ lookup('env','GSLB_RATIO_AWS') }}"
+    gslb_ratio_onprem: "{{ lookup('env','GSLB_RATIO_ONPREM') }}"
+
+- name: set gslb_ratio dictionary
+  set_fact:
+    gslb_ratio: "{{ {} | combine( { 'aws': gslb_ratio_aws }, {'onprem': gslb_ratio_onprem } ) }}"
+
+- name: "set variables for requested state published-globally"
+  set_fact:
+    GSLB_ZONE: "{{BASE_ZONE}}"
+#    GSLB_ZONE: "{{GSLB_NAME}}.{{BASE_ZONE}}"
+

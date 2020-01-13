@@ -1,0 +1,11 @@
+---
+
+- name: add pre-created GSLB regions to DNS zone
+  include_tasks: library/json-add-dict-element.yaml
+  vars:
+    description: "GSLB region"
+    node: "files.input/f5aas-gslb-region.{{item.region}}.json"
+    branch: ".configuration.gslb_service.regions"
+    leaf: ""
+    base: "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-update-subscription.tmpl.json"
+

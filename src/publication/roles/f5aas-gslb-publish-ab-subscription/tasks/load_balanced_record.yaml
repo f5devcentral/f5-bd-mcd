@@ -1,0 +1,43 @@
+---
+
+- name: prepare the load balanced record JSON object, copy the template file
+  delegate_to: localhost
+  shell: |
+    set -e
+    set -x
+    cp "files.input/f5aas-gslb-load_balanced_record-global.tmpl.json" "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-load_balanced_record-global.{{ item.uriHost }}.json"
+
+- name: prepare the load balanced record JSON object, parametrize the template file
+  delegate_to: localhost
+  replace:
+    path: "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-load_balanced_record-global.{{ item.uriHost }}.json"
+    regexp: "{{ inner.expr }}"
+    replace: "{{ inner.replace }}"
+  with_items:
+      - { expr: '%%uriHost%%', replace: "{{ item.uriHost }}" }
+      - { expr: '%%uriHostNormalized%%', replace: "{{ item.uriHostNormalized }}" }
+  loop_control:
+    loop_var: inner
+
+- name: add load balanced record to JSON document
+  include_tasks: library/json-add-dict-element.yaml
+  vars:
+    node: "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-load_balanced_record-global.{{ item.uriHost }}.json"
+    branch: ".configuration.gslb_service.load_balanced_records"
+    leaf: "{{ item.uriHostNormalized }}"
+    base: "files.output/gslb-{{GSLB_ZONE}}/f5aas-gslb-update-subscription.tmpl.json"
+
+#- name: "set query for proximity rules for uriHost {{ item }}"
+#  set_fact:
+#    query_proximity_rules: "[?(({{query_expression}}) && (uriHost == '{{item}}'))].{uriHost: uriHost, region: region, dcname: dcname}"
+
+#- name: show
+#  debug:
+#    msg: "{{query_proximity_rules}}"
+#
+#- name: prepare the load balanced record JSON object, create proximity rules
+#  include_tasks: load_balanced_record_proximity_rules.yaml
+#  with_items: '{{ appState | json_query(query_proximity_rules) | unique }}'
+#  loop_control: 
+#   loop_var: inner
+

@@ -1,0 +1,10 @@
+     {
+        "virtual_server_vHost_%%dcName%%": {
+          "display_name": "vHost_%%dcName%%",
+          "port": 443,
+          "monitor": "none",
+          "address_family": "ipv4",
+          "address": "%%dcGSLBAddress%%"
+        }
+      }
+

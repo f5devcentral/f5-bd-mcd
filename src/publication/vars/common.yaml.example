@@ -1,0 +1,56 @@
+# F5AAS variables
+# This file must bet populated with the correct information for this automation 
+# To work properly once it is filled out remove the ".example" renaming it to common.yaml
+# it is recommended that you encrypt this using the ansible encrypt functionality
+
+F5AAS_SERVER: api.cloudservices.f5.com
+API_VERSION: v1
+F5AAS_USER: "F5AAS Login User"
+F5AAS_PASS: "Password"
+SERVICE_INSTANCE_NAME: Name of Service Instance
+GSLB_NAME: GSLB Name
+BASE_ZONE: Base DNS Name (yourdomain.example)
+VERBOSE: "true"
+
+# OC general settings
+OC: /usr/local/bin/oc
+
+# Users and passwords
+
+OCUSER: OCdemoadm
+OCPASS: OCPassword
+
+BIGIPUSER: BIGIPdemoadm
+BIGIPPASS: BIGIPPassword
+
+############
+# per DC variables
+
+# URL to manage the OC cluster
+ocUrl:
+  onprem: "https://your-ocpcluster-01.example:8443"
+  aws: "https://your-ocpcluster-02.example:8443"
+
+# In our current demo this is the mgmt IP address of the BIG-IP
+as3endpoint:
+  onprem: 192.168.1.100
+  aws: 192.168.1.100 
+
+# VIP address in the BIG-IP
+dcVHostAddress:
+  onprem: 10.10.10.10
+  aws: 10.10.10.10
+
+# GSLB (public) IP address used by F5aaS
+dcGSLBAddress:
+  onprem: 0.0.0.0
+  aws: 0.0.0.0
+
+sdnType:
+  onprem: vxlan
+  aws: bgp
+
+# The next variable is the partition in the BIG-IP of the AS3 deployed
+as3Tenant: your_cis_partition
+
+

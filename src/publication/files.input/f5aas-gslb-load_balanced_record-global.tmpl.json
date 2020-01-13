@@ -1,0 +1,22 @@
+     {
+        "%%uriHostNormalized%%": {
+          "display_name": "%%uriHost%%",
+          "enable": true,
+          "rr_type": "A",
+          "aliases": [
+            "%%uriHost%%"
+          ],
+          "proximity_rules": [
+            {
+              "region": "global",
+              "pool": "pool_%%uriHostNormalized%%",
+              "score": 100 
+            }
+          ],
+          "persistence": false,
+          "persist_cidr_ipv4": 24,
+          "persist_cidr_ipv6": 56,
+          "persistence_TTL": 120
+        }
+     }
+

@@ -1,0 +1,27 @@
+---
+
+- name: "create route file template for application {{item}} in DC {{as3DC}}"
+  delegate_to: localhost
+  shell: |
+    cp files.input/as3-rule.{{item.ruleFileAS3}}.tmpl.json {{as3Rule}}.{{item.nameNormalized}}
+
+- name: apply route settings to route file template
+  delegate_to: localhost
+  replace:
+    path: "{{as3Rule}}.{{item.nameNormalized}}"
+    regexp: "{{ inner.expr }}"
+    replace: "{{ inner.replace }}"
+  with_items:
+      - { expr: '%%rulePool%%', replace: "pool_{{item.nameNormalized}}" }
+      - { expr: '%%dcHost%%', replace: "{{item.uriHost}}" }
+      - { expr: '%%uriPath%%', replace: "{{item.uriPath}}" }
+  loop_control:
+    loop_var: inner
+
+# Note: as3RuleList must be initialized from the caller playbook
+
+- name: append to ordered lists of applications (rule)
+  set_fact:
+    as3RuleList: "{{ as3RuleList + ' ' + as3Rule + '.' +item.nameNormalized }}"
+
+
