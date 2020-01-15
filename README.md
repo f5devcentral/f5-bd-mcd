@@ -22,10 +22,11 @@ Currently some of the set up for this Design is a manual process. A method to bu
   - https://f5.com/products/trials/product-trials/product-trial
 - F5 Container Ingress Service - Installed
   - https://clouddocs.f5.com/containers/v2/openshift/
-
-## Use Case Specific Prerequisites
 - Access to F5 Cloud Services (DNS Load Balancing)
   - https://www.f5.com/products/ways-to-deploy/cloud-services/preview
+
+## Optional Features
+
 - Access to Equinix Smart Key
   - https://www.equinix.com/services/edge-services/smartkey/
 
