@@ -1,7 +1,7 @@
 # Setting up Book Info Application(s)
 
 ## Purpose
-Book Info is a testing application that is published via the Istio project and a good example of a simplet multi microservice application.
+Book Info is a testing application that is published via the Istio project and a good example of a simple multi microservice application.
 
 This app will be used to demonstrate how to publish and update an application using the previously mentioned A/B Deployment method.
 
